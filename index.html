@@ -15,14 +15,14 @@
     .field { display:flex; flex-direction:column; gap:6px; }
     .field.full { grid-column:1/-1; }
     label { font-weight:700; font-size:14px; }
-    input,select,textarea { width:100%; border:1px solid #aab7bf; border-radius:6px; padding:10px 12px; font-size:15px; background:white; }
-    textarea { min-height:74px; resize:vertical; }
+    input,select { width:100%; border:1px solid #aab7bf; border-radius:6px; padding:10px 12px; font-size:15px; background:white; }
     .section-title { margin:28px 0 12px; padding-top:18px; border-top:1px solid #cbd5da; font-size:19px; color:#143a63; font-weight:800; }
     .actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
     button { border:0; border-radius:6px; padding:11px 18px; font-size:15px; font-weight:800; cursor:pointer; }
     .primary { background:#4d8b1f; color:white; }
     .secondary { background:#607d8b; color:white; }
     .ghost { background:#e3e9ec; color:#263238; }
+    .download { background:#143a63; color:#fff; }
     .checks { margin-top:18px; display:grid; gap:8px; }
     .check { padding:10px 12px; border-radius:6px; background:#eef2f3; font-size:14px; font-weight:700; }
     .ok { color:#1b5e20; background:#e8f5e9; }
@@ -35,14 +35,13 @@
     pre { margin:0; white-space:pre-wrap; word-break:break-word; background:#16232c; color:#e8f1f5; padding:14px; max-height:520px; overflow:auto; font-size:13px; }
     .note { margin-top:18px; padding:12px 14px; border-left:4px solid #0d5e92; background:#eaf3f8; font-size:14px; line-height:1.5; }
     .copy-status { margin-top:8px; text-align:center; font-weight:700; color:#1b5e20; min-height:20px; }
-    .mini { font-size:12px; color:#607d8b; font-weight:400; line-height:1.35; }
     @media (max-width:720px){ .page{padding:10px}.panel{padding:16px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.output-head{align-items:flex-start;flex-direction:column} }
   </style>
 </head>
 <body>
 <div class="page"><div class="panel">
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 3.1 — Έτοιμα blocks + OLD DATA CHECK πριν από την παραγωγή</div>
+<div class="subtitle">Έκδοση 4 — Έτοιμα blocks και λήψη ολόκληρου πακέτου νέου αγώνα</div>
 
 <div class="grid">
   <div class="field"><label for="raceTitle">Όνομα αγώνα *</label><input id="raceTitle" placeholder="π.χ. ΑΓΚΙΣΤΡΙ 2027"></div>
@@ -60,15 +59,7 @@
   <div class="field"><label for="daRule">Dynamic Allowance</label><select id="daRule"><option value="YES">YES</option><option value="NO">NO</option></select></div>
   <div class="field"><label for="daLimit">DA Limit</label><input id="daLimit" value="0.230"></div>
   <div class="field"><label for="daClubLimit">DA Club/Sport Limit</label><input id="daClubLimit" value="0.300"></div>
-</div>
-
-<div class="section-title">OLD DATA CHECK</div>
-<div class="grid">
-  <div class="field full">
-    <label for="forbiddenTokens">Παλιές λέξεις / IDs που ΔΕΝ πρέπει να υπάρχουν</label>
-    <textarea id="forbiddenTokens" placeholder="π.χ. ΚΟΡΦΟΣ, KALLITHEA, 262128273107351, παλιό-spreadsheet-id"></textarea>
-    <div class="mini">Χώρισε τις τιμές με κόμμα ή νέα γραμμή. Αν βρεθεί κάποια μέσα στα παραγόμενα blocks, η δημιουργία πακέτου σταματά.</div>
-  </div>
+  <div class="field full"><label for="forbiddenTokens">OLD DATA CHECK — παλιά ονόματα / IDs (χωρισμένα με κόμμα)</label><input id="forbiddenTokens" placeholder="π.χ. ΚΟΡΦΟΣ, KALLITHEA, ΚΑΛΛΙΘΕΑ, παλιό Jotform ID"></div>
 </div>
 
 <div class="section-title">Υπηρεσίες</div>
@@ -81,6 +72,7 @@
 <div class="actions">
   <button class="primary" id="checkBtn">ΕΛΕΓΧΟΣ</button>
   <button class="secondary" id="generateBtn">ΔΗΜΙΟΥΡΓΙΑ ΠΑΚΕΤΟΥ</button>
+  <button class="download" id="downloadBtn">ΛΗΨΗ ΠΑΚΕΤΟΥ</button>
   <button class="ghost" id="demoBtn">ΦΟΡΤΩΣΗ ΠΑΡΑΔΕΙΓΜΑΤΟΣ</button>
 </div>
 
@@ -95,7 +87,7 @@
   <div class="output-card"><div class="output-head"><span>4. URLs αγώνα</span><button class="copy-btn" data-copy="urlsBlock">ΑΝΤΙΓΡΑΦΗ</button></div><pre id="urlsBlock"></pre></div>
 </div>
 
-<div class="note">Η έκδοση 3.1 ελέγχει και για παλιά ονόματα/IDs πριν εμφανίσει το πακέτο. Αν βρεθεί απαγορευμένη τιμή, η παραγωγή μπλοκάρεται ώστε να μη μεταφερθεί κατά λάθος παλιό δεδομένο στον νέο αγώνα.</div>
+<div class="note">Η έκδοση 4 προσθέτει λήψη ολόκληρου πακέτου σε ένα αρχείο TXT. Δεν δημιουργεί ακόμη αυτόματα repository, spreadsheet, deployment ή Jotform.</div>
 </div></div>
 
 <script>
@@ -109,12 +101,7 @@ function looksLikeScriptUrl(url){return /^https:\/\/script\.google\.com\/macros\
 function looksLikeRepoName(name){return /^[a-z0-9._-]+$/.test(String(name||"").trim());}
 function addCheck(text,type){const div=document.createElement("div");div.className="check "+type;div.textContent=(type==="ok"?"✓ ":type==="bad"?"✖ ":"! ")+text;$("checks").appendChild(div);}
 
-function forbiddenList(){
-  return value("forbiddenTokens")
-    .split(/[\n,]+/)
-    .map(s=>s.trim())
-    .filter(Boolean);
-}
+function getForbiddenTokens(){return value("forbiddenTokens").split(",").map(x=>x.trim()).filter(Boolean);}
 
 function runChecks(){
   $("checks").innerHTML=""; $("copyStatus").textContent=""; let ok=true;
@@ -125,7 +112,6 @@ function runChecks(){
   [["viewerEndpoint","Viewer"],["boatLookupUrl","Boat Lookup"],["personLookupUrl","Person Lookup"]].forEach(([id,label])=>{if(value(id)&&!looksLikeScriptUrl(value(id))){addCheck(label+": το URL δεν έχει την αναμενόμενη μορφή Web App /exec.","bad");ok=false;}});
   if(value("racePrefix")!==normalizePrefix(value("racePrefix")))addCheck("Το Race Prefix προτείνεται να είναι μόνο A-Z, 0-9 και underscore.","warn");
   addCheck(value("bannerUrl")?"Banner URL αναγνωρίστηκε.":"Δεν έχει δοθεί banner. Μπορεί να προστεθεί αργότερα.",value("bannerUrl")?"ok":"warn");
-  addCheck(forbiddenList().length?"OLD DATA CHECK: έχουν δηλωθεί "+forbiddenList().length+" απαγορευμένες τιμές.":"OLD DATA CHECK: δεν έχουν δηλωθεί παλιές τιμές προς έλεγχο.",forbiddenList().length?"ok":"warn");
   addCheck(ok?"Βασικός έλεγχος: ΕΤΟΙΜΟ για παραγωγή πακέτου.":"Βασικός έλεγχος: υπάρχουν υποχρεωτικά πεδία που χρειάζονται διόρθωση.",ok?"ok":"bad");
   return ok;
 }
@@ -220,47 +206,66 @@ ${m.boatLookupUrl}
 Person lookup:
 ${m.personLookupUrl}`;}
 
-function findForbidden(text){
-  const haystack=String(text||"").toLocaleLowerCase("el-GR");
-  return forbiddenList().filter(token=>haystack.includes(token.toLocaleLowerCase("el-GR")));
-}
-
-function generatePackage(){
-  if(!runChecks()){$("output").style.display="none";return;}
+function getGeneratedBlocks(){
   const m=getModel();
-  const blocks={
+  return {
     settings:buildSettingsBlock(m),
     index:buildIndexConfigBlock(m),
     crew:buildCrewConfigBlock(m),
     urls:buildUrlsBlock(m)
   };
-  const combined=Object.values(blocks).join("\n\n");
-  const hits=[...new Set(findForbidden(combined))];
-  if(hits.length){
-    addCheck("OLD DATA CHECK ΑΠΟΤΥΧΙΑ: βρέθηκαν: "+hits.join(" | "),"bad");
-    addCheck("Η δημιουργία πακέτου σταμάτησε. Διόρθωσε τις τιμές και ξαναδοκίμασε.","bad");
-    $("output").style.display="none";
-    return;
-  }
-  addCheck("OLD DATA CHECK: ΚΑΘΑΡΟ — δεν βρέθηκε καμία απαγορευμένη τιμή στα παραγόμενα blocks.","ok");
+}
+
+function oldDataCheck(blocks){
+  const forbidden=getForbiddenTokens();
+  if(!forbidden.length){addCheck("OLD DATA CHECK: δεν έχουν δηλωθεί παλιά στοιχεία για έλεγχο.","warn");return true;}
+  const all=(blocks.settings+"\n"+blocks.index+"\n"+blocks.crew+"\n"+blocks.urls).toLowerCase();
+  const found=forbidden.filter(token=>all.includes(token.toLowerCase()));
+  if(found.length){addCheck("OLD DATA CHECK: ΒΡΕΘΗΚΑΝ παλιά στοιχεία → "+found.join(", "),"bad");return false;}
+  addCheck("OLD DATA CHECK: καθαρό — δεν βρέθηκαν παλιά ονόματα/IDs.","ok");return true;
+}
+
+function generatePackage(){
+  if(!runChecks()){$("output").style.display="none";return false;}
+  const blocks=getGeneratedBlocks();
+  if(!oldDataCheck(blocks)){$("output").style.display="none";return false;}
   $("settingsBlock").textContent=blocks.settings;
   $("indexConfigBlock").textContent=blocks.index;
   $("crewConfigBlock").textContent=blocks.crew;
   $("urlsBlock").textContent=blocks.urls;
   $("output").style.display="block";
   $("output").scrollIntoView({behavior:"smooth",block:"start"});
+  return true;
 }
 
 async function copyBlock(id){
   const text=$(id).textContent;
-  try{await navigator.clipboard.writeText(text);}
-  catch(e){const a=document.createElement("textarea");a.value=text;document.body.appendChild(a);a.select();document.execCommand("copy");document.body.removeChild(a);}
+  try{await navigator.clipboard.writeText(text);}catch(e){const a=document.createElement("textarea");a.value=text;document.body.appendChild(a);a.select();document.execCommand("copy");document.body.removeChild(a);}
   $("copyStatus").textContent="✓ Αντιγράφηκε στο πρόχειρο.";
   setTimeout(()=>$("copyStatus").textContent="",2500);
 }
 
+function downloadPackage(){
+  if(!generatePackage())return;
+  const m=getModel();
+  const b=getGeneratedBlocks();
+  const text=`REGATTAHUB NEW RACE PACKAGE\n===========================\n\nRACE: ${m.raceTitle}\nREPOSITORY: ${m.repoName}\n\n1. ΡΥΘΜΙΣΕΙΣ GOOGLE SHEET\n--------------------------\n${b.settings}\n\n2. CONFIG INDEX.HTML\n--------------------\n${b.index}\n\n3. CONFIG CREW_CHANGE.HTML\n--------------------------\n${b.crew}\n\n4. URLS\n-------\n${b.urls}\n`;
+  const blob=new Blob([text],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=(m.repoName||"new-race")+"-package.txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  $("copyStatus").textContent="✓ Το πακέτο κατέβηκε ως αρχείο TXT.";
+  setTimeout(()=>$("copyStatus").textContent="",3000);
+}
+
 $("checkBtn").addEventListener("click",runChecks);
 $("generateBtn").addEventListener("click",generatePackage);
+$("downloadBtn").addEventListener("click",downloadPackage);
 document.querySelectorAll("[data-copy]").forEach(btn=>btn.addEventListener("click",()=>copyBlock(btn.dataset.copy)));
 $("demoBtn").addEventListener("click",()=>{
   $("raceTitle").value="ΑΓΚΙΣΤΡΙ 2026";
