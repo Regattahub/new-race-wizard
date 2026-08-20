@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RegattaHub - New Race Wizard</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #0d5e92; color: #263238; }
+    .page { max-width: 980px; margin: 0 auto; padding: 24px; }
+    .panel { background: #f4f7f5; border-radius: 10px; padding: 24px; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+    h1 { margin: 0 0 8px; text-align: center; color: #0d5e92; }
+    .subtitle { text-align: center; margin-bottom: 24px; color: #52636d; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-weight: 700; font-size: 14px; }
+    input, select { width: 100%; border: 1px solid #aab7bf; border-radius: 6px; padding: 10px 12px; font-size: 15px; background: white; }
+    .section-title { margin: 28px 0 12px; padding-top: 18px; border-top: 1px solid #cbd5da; font-size: 19px; color: #143a63; font-weight: 800; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 24px; }
+    button { border: 0; border-radius: 6px; padding: 11px 18px; font-size: 15px; font-weight: 800; cursor: pointer; }
+    .primary { background: #4d8b1f; color: white; }
+    .secondary { background: #607d8b; color: white; }
+    .ghost { background: #e3e9ec; color: #263238; }
+    .checks { margin-top: 18px; display: grid; gap: 8px; }
+    .check { padding: 10px 12px; border-radius: 6px; background: #eef2f3; font-size: 14px; font-weight: 700; }
+    .ok { color: #1b5e20; background: #e8f5e9; }
+    .bad { color: #b71c1c; background: #ffebee; }
+    .warn { color: #8a5a00; background: #fff8e1; }
+    .output { margin-top: 20px; display: none; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #16232c; color: #e8f1f5; padding: 14px; border-radius: 7px; max-height: 420px; overflow: auto; font-size: 13px; }
+    .note { margin-top: 16px; padding: 12px 14px; border-left: 4px solid #0d5e92; background: #eaf3f8; font-size: 14px; line-height: 1.5; }
+    @media (max-width: 720px) { .page { padding: 10px; } .panel { padding: 16px; } .grid { grid-template-columns: 1fr; } .field.full { grid-column: auto; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="panel">
+      <h1>RegattaHub New Race Wizard</h1>
+      <div class="subtitle">Έκδοση 1 — Έλεγχος και δημιουργία ρυθμίσεων χωρίς καμία αλλαγή σε ενεργούς αγώνες</div>
+
+      <div class="grid">
+        <div class="field"><label for="raceTitle">Όνομα αγώνα *</label><input id="raceTitle" placeholder="π.χ. ΑΓΚΙΣΤΡΙ 2027" /></div>
+        <div class="field"><label for="racePrefix">Race Prefix *</label><input id="racePrefix" placeholder="π.χ. AGKISTRI_2027" /></div>
+        <div class="field"><label for="raceDate">Ημερομηνία αγώνα *</label><input id="raceDate" placeholder="π.χ. 19 & 20 Σεπτεμβρίου 2027" /></div>
+        <div class="field"><label for="expiration">Λήξη συμμετοχών *</label><input id="expiration" placeholder="π.χ. 17 ΣΕΠΤΕΜΒΡΙΟΥ ώρα: 21:00" /></div>
+        <div class="field"><label for="jotformId">Jotform Form ID *</label><input id="jotformId" inputmode="numeric" placeholder="π.χ. 262291236204349" /></div>
+        <div class="field"><label for="settingsSheetId">Settings / Submissions Spreadsheet ID *</label><input id="settingsSheetId" placeholder="Google Sheet ID" /></div>
+        <div class="field full"><label for="bannerUrl">Banner URL</label><input id="bannerUrl" placeholder="Google Drive share URL ή thumbnail URL" /></div>
+        <div class="field"><label for="organizerName">Διοργανωτής</label><input id="organizerName" placeholder="π.χ. ΙΟΠ-ΔΕΗ / ΝΑΟΕΦΚ" /></div>
+        <div class="field"><label for="phone">Τηλέφωνο</label><input id="phone" placeholder="π.χ. 210 4101113" /></div>
+        <div class="field"><label for="osrRule">WS OSR Rule</label><select id="osrRule"><option value="YES">YES</option><option value="NO">NO</option></select></div>
+        <div class="field"><label for="daRule">Dynamic Allowance</label><select id="daRule"><option value="YES">YES</option><option value="NO">NO</option></select></div>
+        <div class="field"><label for="daLimit">DA Limit</label><input id="daLimit" value="0.230" /></div>
+        <div class="field"><label for="daClubLimit">DA Club/Sport Limit</label><input id="daClubLimit" value="0.300" /></div>
+      </div>
+
+      <div class="section-title">Υπηρεσίες</div>
+      <div class="grid">
+        <div class="field full"><label for="viewerEndpoint">Settings / Viewer Web App URL *</label><input id="viewerEndpoint" placeholder="https://script.google.com/macros/s/.../exec" /></div>
+        <div class="field full"><label for="boatLookupUrl">Boat Lookup Web App URL *</label><input id="boatLookupUrl" placeholder="https://script.google.com/macros/s/.../exec" /></div>
+        <div class="field full"><label for="personLookupUrl">Person Lookup Web App URL *</label><input id="personLookupUrl" value="https://script.google.com/macros/s/AKfycbw-zgZZeHRC6S5_f1xGkTwx-wXcFNq9z2O4cfhzAHSULQNDrwCp88vcvgU-617pgcg1/exec" /></div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="checkBtn">ΕΛΕΓΧΟΣ</button>
+        <button class="secondary" id="generateBtn">ΔΗΜΙΟΥΡΓΙΑ ΡΥΘΜΙΣΕΩΝ</button>
+        <button class="ghost" id="demoBtn">ΦΟΡΤΩΣΗ ΠΑΡΑΔΕΙΓΜΑΤΟΣ</button>
+      </div>
+
+      <div id="checks" class="checks"></div>
+      <div id="output" class="output"><div class="section-title">Παραγόμενες ρυθμίσεις</div><pre id="outputText"></pre></div>
+      <div class="note">Η έκδοση 1 δεν δημιουργεί repository, spreadsheet, deployment ή Jotform και δεν αλλάζει κανέναν ενεργό αγώνα. Παράγει μόνο ελεγμένες τιμές και URLs.</div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const value = (id) => String($(id).value || "").trim();
+
+    function normalizePrefix(text) {
+      return String(text || "").trim().toUpperCase()
+        .replace(/[ΆΑ]/g, "A").replace(/[ΈΕ]/g, "E").replace(/[ΉΗ]/g, "H")
+        .replace(/[ΊΪΙ]/g, "I").replace(/[ΌΟ]/g, "O").replace(/[ΎΫΥ]/g, "Y")
+        .replace(/[ΏΩ]/g, "W").replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    }
+
+    function extractDriveId(url) {
+      const text = String(url || "").trim();
+      const match = text.match(/\/file\/d\/([A-Za-z0-9_-]+)/) || text.match(/[?&]id=([A-Za-z0-9_-]+)/);
+      return match ? match[1] : "";
+    }
+
+    function bannerUrl(url) {
+      const id = extractDriveId(url);
+      return id ? "https://drive.google.com/thumbnail?id=" + id + "&sz=w2000" : String(url || "").trim();
+    }
+
+    function looksLikeScriptUrl(url) {
+      return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(String(url || "").trim());
+    }
+
+    function addCheck(text, type) {
+      const div = document.createElement("div");
+      div.className = "check " + type;
+      div.textContent = (type === "ok" ? "✓ " : type === "bad" ? "✖ " : "! ") + text;
+      $("checks").appendChild(div);
+    }
+
+    function runChecks() {
+      $("checks").innerHTML = "";
+      let ok = true;
+      const required = [
+        ["raceTitle", "Όνομα αγώνα"], ["racePrefix", "Race Prefix"], ["raceDate", "Ημερομηνία"],
+        ["expiration", "Λήξη συμμετοχών"], ["jotformId", "Jotform Form ID"],
+        ["settingsSheetId", "Settings Spreadsheet ID"], ["viewerEndpoint", "Viewer Web App URL"],
+        ["boatLookupUrl", "Boat Lookup URL"], ["personLookupUrl", "Person Lookup URL"]
+      ];
+      required.forEach(([id, label]) => {
+        if (value(id)) addCheck(label + ": συμπληρωμένο", "ok");
+        else { addCheck(label + ": λείπει", "bad"); ok = false; }
+      });
+      if (value("jotformId") && !/^\d{10,20}$/.test(value("jotformId"))) { addCheck("Το Jotform Form ID δεν μοιάζει έγκυρο.", "bad"); ok = false; }
+      [["viewerEndpoint", "Viewer"], ["boatLookupUrl", "Boat Lookup"], ["personLookupUrl", "Person Lookup"]].forEach(([id, label]) => {
+        if (value(id) && !looksLikeScriptUrl(value(id))) { addCheck(label + ": το URL δεν έχει την αναμενόμενη μορφή Web App /exec.", "bad"); ok = false; }
+      });
+      if (value("racePrefix") !== normalizePrefix(value("racePrefix"))) addCheck("Το Race Prefix προτείνεται να είναι μόνο A-Z, 0-9 και underscore.", "warn");
+      addCheck(value("bannerUrl") ? "Banner URL αναγνωρίστηκε." : "Δεν έχει δοθεί banner. Μπορεί να προστεθεί αργότερα.", value("bannerUrl") ? "ok" : "warn");
+      addCheck(ok ? "Βασικός έλεγχος: ΕΤΟΙΜΟ για παραγωγή ρυθμίσεων." : "Βασικός έλεγχος: υπάρχουν υποχρεωτικά πεδία που χρειάζονται διόρθωση.", ok ? "ok" : "bad");
+      return ok;
+    }
+
+    function buildSettings() {
+      const settingsId = value("settingsSheetId"), viewer = value("viewerEndpoint"), jotformId = value("jotformId");
+      return {
+        RACE_PREFIX: value("racePrefix"), RACE_TITLE: value("raceTitle"), SHOW_RACE_TITLE: "YES",
+        RACE_DATE: value("raceDate"), SUBMIT_EXPIRATION: value("expiration"),
+        VIEWER: viewer && settingsId ? viewer + "?settings=" + encodeURIComponent(settingsId) : "",
+        PUBLIC_VIEWER: viewer && settingsId ? viewer + "?settings=" + encodeURIComponent(settingsId) + "&public=1" : "",
+        ORGANIZER_BANNER: bannerUrl(value("bannerUrl")), ORGANIZER_NAME: value("organizerName"),
+        ORGANIZER_SHORT_NAME: value("organizerName"), ORGANIZER_EMAIL: "", ORGANIZER_TEL: value("phone"),
+        SETTINGS_ENDPOINT: viewer && settingsId ? viewer + "?action=settings&settings=" + encodeURIComponent(settingsId) : "",
+        OSR_RULE: value("osrRule"), JOTFORM_FORM_ID: jotformId,
+        JOTFORM_FORM_URL: jotformId ? "https://form.jotform.com/" + jotformId : "",
+        BOAT_LOOKUP_URL: value("boatLookupUrl"), PERSON_LOOKUP_URL: value("personLookupUrl"),
+        DA_RULE_ACTIVE: value("daRule"), DA_LIMIT: value("daLimit"), DA_CLUB_SPORT_LIMIT: value("daClubLimit")
+      };
+    }
+
+    $("checkBtn").addEventListener("click", runChecks);
+    $("generateBtn").addEventListener("click", () => {
+      runChecks();
+      $("outputText").textContent = JSON.stringify(buildSettings(), null, 2);
+      $("output").style.display = "block";
+      $("output").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    $("demoBtn").addEventListener("click", () => {
+      $("raceTitle").value = "ΑΓΚΙΣΤΡΙ 2026";
+      $("racePrefix").value = "AGKISTRI_2026";
+      $("raceDate").value = "19 & 20 Σεπτεμβρίου 2026";
+      $("expiration").value = "17 ΣΕΠΤΕΜΒΡΙΟΥ ώρα: 21:00";
+      $("jotformId").value = "262291236204349";
+      $("settingsSheetId").value = "1n82B0U9POzHzGARw6ZCOwxoOidTHW9xtkyKXiQEk8u0";
+      $("bannerUrl").value = "https://drive.google.com/file/d/1uc_l2tP3ak-pivtgABxuUxvfmjlS27Cf/view?usp=sharing";
+      $("organizerName").value = "ΙΟΠ-ΔΕΗ / ΝΑΟΕΦΚ";
+      $("phone").value = "210 4101113";
+      $("viewerEndpoint").value = "https://script.google.com/macros/s/AKfycbwZHkHtIf_wc9cMTh51gOUidUjBQ1b2-1JjmlZbUPzlfO1GnYpJ76lRIP0x2Gak_G52/exec";
+      $("boatLookupUrl").value = "https://script.google.com/macros/s/AKfycbweSV0ADfQEtl26B_lcxGjWHHgx0G8d5oYiZoK-ZvxQC4l2JPaIx9vEiWKmyDIXjvpkGQ/exec";
+      runChecks();
+    });
+  </script>
+</body>
+</html>
