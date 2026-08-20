@@ -15,7 +15,8 @@
     .field { display:flex; flex-direction:column; gap:6px; }
     .field.full { grid-column:1/-1; }
     label { font-weight:700; font-size:14px; }
-    input,select { width:100%; border:1px solid #aab7bf; border-radius:6px; padding:10px 12px; font-size:15px; background:white; }
+    input,select,textarea { width:100%; border:1px solid #aab7bf; border-radius:6px; padding:10px 12px; font-size:15px; background:white; }
+    textarea { min-height:74px; resize:vertical; }
     .section-title { margin:28px 0 12px; padding-top:18px; border-top:1px solid #cbd5da; font-size:19px; color:#143a63; font-weight:800; }
     .actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
     button { border:0; border-radius:6px; padding:11px 18px; font-size:15px; font-weight:800; cursor:pointer; }
@@ -34,13 +35,14 @@
     pre { margin:0; white-space:pre-wrap; word-break:break-word; background:#16232c; color:#e8f1f5; padding:14px; max-height:520px; overflow:auto; font-size:13px; }
     .note { margin-top:18px; padding:12px 14px; border-left:4px solid #0d5e92; background:#eaf3f8; font-size:14px; line-height:1.5; }
     .copy-status { margin-top:8px; text-align:center; font-weight:700; color:#1b5e20; min-height:20px; }
+    .mini { font-size:12px; color:#607d8b; font-weight:400; line-height:1.35; }
     @media (max-width:720px){ .page{padding:10px}.panel{padding:16px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.output-head{align-items:flex-start;flex-direction:column} }
   </style>
 </head>
 <body>
 <div class="page"><div class="panel">
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 3 — Έτοιμα blocks για ΡΥΘΜΙΣΕΙΣ, index.html και crew_change.html</div>
+<div class="subtitle">Έκδοση 3.1 — Έτοιμα blocks + OLD DATA CHECK πριν από την παραγωγή</div>
 
 <div class="grid">
   <div class="field"><label for="raceTitle">Όνομα αγώνα *</label><input id="raceTitle" placeholder="π.χ. ΑΓΚΙΣΤΡΙ 2027"></div>
@@ -58,6 +60,15 @@
   <div class="field"><label for="daRule">Dynamic Allowance</label><select id="daRule"><option value="YES">YES</option><option value="NO">NO</option></select></div>
   <div class="field"><label for="daLimit">DA Limit</label><input id="daLimit" value="0.230"></div>
   <div class="field"><label for="daClubLimit">DA Club/Sport Limit</label><input id="daClubLimit" value="0.300"></div>
+</div>
+
+<div class="section-title">OLD DATA CHECK</div>
+<div class="grid">
+  <div class="field full">
+    <label for="forbiddenTokens">Παλιές λέξεις / IDs που ΔΕΝ πρέπει να υπάρχουν</label>
+    <textarea id="forbiddenTokens" placeholder="π.χ. ΚΟΡΦΟΣ, KALLITHEA, 262128273107351, παλιό-spreadsheet-id"></textarea>
+    <div class="mini">Χώρισε τις τιμές με κόμμα ή νέα γραμμή. Αν βρεθεί κάποια μέσα στα παραγόμενα blocks, η δημιουργία πακέτου σταματά.</div>
+  </div>
 </div>
 
 <div class="section-title">Υπηρεσίες</div>
@@ -84,7 +95,7 @@
   <div class="output-card"><div class="output-head"><span>4. URLs αγώνα</span><button class="copy-btn" data-copy="urlsBlock">ΑΝΤΙΓΡΑΦΗ</button></div><pre id="urlsBlock"></pre></div>
 </div>
 
-<div class="note">Η έκδοση 3 δεν δημιουργεί ακόμη αυτόματα repository, spreadsheet, deployment ή Jotform. Παράγει όμως έτοιμα blocks για αντιγραφή, ώστε να μη χρειάζεται αναζήτηση και χειροκίνητη σύνθεση τιμών.</div>
+<div class="note">Η έκδοση 3.1 ελέγχει και για παλιά ονόματα/IDs πριν εμφανίσει το πακέτο. Αν βρεθεί απαγορευμένη τιμή, η παραγωγή μπλοκάρεται ώστε να μη μεταφερθεί κατά λάθος παλιό δεδομένο στον νέο αγώνα.</div>
 </div></div>
 
 <script>
@@ -98,6 +109,13 @@ function looksLikeScriptUrl(url){return /^https:\/\/script\.google\.com\/macros\
 function looksLikeRepoName(name){return /^[a-z0-9._-]+$/.test(String(name||"").trim());}
 function addCheck(text,type){const div=document.createElement("div");div.className="check "+type;div.textContent=(type==="ok"?"✓ ":type==="bad"?"✖ ":"! ")+text;$("checks").appendChild(div);}
 
+function forbiddenList(){
+  return value("forbiddenTokens")
+    .split(/[\n,]+/)
+    .map(s=>s.trim())
+    .filter(Boolean);
+}
+
 function runChecks(){
   $("checks").innerHTML=""; $("copyStatus").textContent=""; let ok=true;
   const required=[["raceTitle","Όνομα αγώνα"],["racePrefix","Race Prefix"],["repoName","GitHub Repository Name"],["raceDate","Ημερομηνία"],["expiration","Λήξη συμμετοχών"],["jotformId","Jotform Form ID"],["settingsSheetId","Settings Spreadsheet ID"],["viewerEndpoint","Viewer Web App URL"],["boatLookupUrl","Boat Lookup URL"],["personLookupUrl","Person Lookup URL"]];
@@ -107,6 +125,7 @@ function runChecks(){
   [["viewerEndpoint","Viewer"],["boatLookupUrl","Boat Lookup"],["personLookupUrl","Person Lookup"]].forEach(([id,label])=>{if(value(id)&&!looksLikeScriptUrl(value(id))){addCheck(label+": το URL δεν έχει την αναμενόμενη μορφή Web App /exec.","bad");ok=false;}});
   if(value("racePrefix")!==normalizePrefix(value("racePrefix")))addCheck("Το Race Prefix προτείνεται να είναι μόνο A-Z, 0-9 και underscore.","warn");
   addCheck(value("bannerUrl")?"Banner URL αναγνωρίστηκε.":"Δεν έχει δοθεί banner. Μπορεί να προστεθεί αργότερα.",value("bannerUrl")?"ok":"warn");
+  addCheck(forbiddenList().length?"OLD DATA CHECK: έχουν δηλωθεί "+forbiddenList().length+" απαγορευμένες τιμές.":"OLD DATA CHECK: δεν έχουν δηλωθεί παλιές τιμές προς έλεγχο.",forbiddenList().length?"ok":"warn");
   addCheck(ok?"Βασικός έλεγχος: ΕΤΟΙΜΟ για παραγωγή πακέτου.":"Βασικός έλεγχος: υπάρχουν υποχρεωτικά πεδία που χρειάζονται διόρθωση.",ok?"ok":"bad");
   return ok;
 }
@@ -159,7 +178,7 @@ const CONFIG = {
   CREW_CHANGE_URL: "${m.crewChangeUrl}",
   YEAR: "2026",
   INFO_PHONE: "${m.phone}"
-};`; }
+};`;}
 
 function buildCrewConfigBlock(m){return `const CONFIG = {
   EVENT_TITLE: "${m.raceTitle}",
@@ -172,7 +191,7 @@ function buildCrewConfigBlock(m){return `const CONFIG = {
   EVENT_BACKGROUND: "background.jpg",
   YEAR: "2026",
   INFO_PHONE: "${m.phone}"
-};`; }
+};`;}
 
 function buildUrlsBlock(m){return `GitHub repository:
 https://github.com/Regattahub/${m.repoName}
@@ -201,13 +220,33 @@ ${m.boatLookupUrl}
 Person lookup:
 ${m.personLookupUrl}`;}
 
+function findForbidden(text){
+  const haystack=String(text||"").toLocaleLowerCase("el-GR");
+  return forbiddenList().filter(token=>haystack.includes(token.toLocaleLowerCase("el-GR")));
+}
+
 function generatePackage(){
   if(!runChecks()){$("output").style.display="none";return;}
   const m=getModel();
-  $("settingsBlock").textContent=buildSettingsBlock(m);
-  $("indexConfigBlock").textContent=buildIndexConfigBlock(m);
-  $("crewConfigBlock").textContent=buildCrewConfigBlock(m);
-  $("urlsBlock").textContent=buildUrlsBlock(m);
+  const blocks={
+    settings:buildSettingsBlock(m),
+    index:buildIndexConfigBlock(m),
+    crew:buildCrewConfigBlock(m),
+    urls:buildUrlsBlock(m)
+  };
+  const combined=Object.values(blocks).join("\n\n");
+  const hits=[...new Set(findForbidden(combined))];
+  if(hits.length){
+    addCheck("OLD DATA CHECK ΑΠΟΤΥΧΙΑ: βρέθηκαν: "+hits.join(" | "),"bad");
+    addCheck("Η δημιουργία πακέτου σταμάτησε. Διόρθωσε τις τιμές και ξαναδοκίμασε.","bad");
+    $("output").style.display="none";
+    return;
+  }
+  addCheck("OLD DATA CHECK: ΚΑΘΑΡΟ — δεν βρέθηκε καμία απαγορευμένη τιμή στα παραγόμενα blocks.","ok");
+  $("settingsBlock").textContent=blocks.settings;
+  $("indexConfigBlock").textContent=blocks.index;
+  $("crewConfigBlock").textContent=blocks.crew;
+  $("urlsBlock").textContent=blocks.urls;
   $("output").style.display="block";
   $("output").scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -235,6 +274,7 @@ $("demoBtn").addEventListener("click",()=>{
   $("organizerName").value="ΙΟΠ-ΔΕΗ / ΝΑΟΕΦΚ";
   $("organizerEmail").value="";
   $("phone").value="210 4101113";
+  $("forbiddenTokens").value="ΚΟΡΦΟΣ, KALLITHEA, ΚΑΛΛΙΘΕΑ, 262128273107351";
   $("viewerEndpoint").value="https://script.google.com/macros/s/AKfycbwZHkHtIf_wc9cMTh51gOUidUjBQ1b2-1JjmlZbUPzlfO1GnYpJ76lRIP0x2Gak_G52/exec";
   $("boatLookupUrl").value="https://script.google.com/macros/s/AKfycbweSV0ADfQEtl26B_lcxGjWHHgx0G8d5oYiZoK-ZvxQC4l2JPaIx9vEiWKmyDIXjvpkGQ/exec";
   runChecks();
