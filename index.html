@@ -35,6 +35,11 @@
     pre { margin:0; white-space:pre-wrap; word-break:break-word; background:#16232c; color:#e8f1f5; padding:14px; max-height:520px; overflow:auto; font-size:13px; }
     .note { margin-top:18px; padding:12px 14px; border-left:4px solid #0d5e92; background:#eaf3f8; font-size:14px; line-height:1.5; }
     .copy-status { margin-top:8px; text-align:center; font-weight:700; color:#1b5e20; min-height:20px; }
+    .creator-btn { background:#7a3e00; color:white; }
+    .creator-status { margin-top:14px; padding:12px 14px; border-radius:6px; font-weight:800; display:none; }
+    .creator-status.ok { display:block; color:#1b5e20; background:#e8f5e9; }
+    .creator-status.bad { display:block; color:#b71c1c; background:#ffebee; }
+    .creator-status.wait { display:block; color:#143a63; background:#eaf3f8; }
     @media (max-width:720px){ .page{padding:10px}.panel{padding:16px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.output-head{align-items:flex-start;flex-direction:column} }
   </style>
 </head>
@@ -44,7 +49,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.1 — Πακέτο νέου αγώνα με αυτόματο έτος και OLD DATA CHECK</div>
+<div class="subtitle">Έκδοση 4.2 — Πακέτο νέου αγώνα + σύνδεση με REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -155,10 +160,16 @@
     <input id="personLookupUrl" value="https://script.google.com/macros/s/AKfycbw-zgZZeHRC6S5_f1xGkTwx-wXcFNq9z2O4cfhzAHSULQNDrwCp88vcvgU-617pgcg1/exec">
   </div>
 
+  <div class="field full">
+    <label for="creatorUrl">New Race Creator Web App URL</label>
+    <input id="creatorUrl" value="https://script.google.com/macros/s/AKfycbyuI2Q3Er3zUD__rcsAldHG9a4ppeueWFGR6s2vUs56oPqRmR2PRnbcwUzcmpQHCf-o/exec" readonly>
+  </div>
+
 </div>
 
 <div class="actions">
   <button class="primary" id="checkBtn">ΕΛΕΓΧΟΣ</button>
+  <button class="creator-btn" id="creatorCheckBtn">ΕΛΕΓΧΟΣ CREATOR</button>
   <button class="secondary" id="generateBtn">ΔΗΜΙΟΥΡΓΙΑ ΠΑΚΕΤΟΥ</button>
   <button class="download" id="downloadBtn">ΛΗΨΗ ΠΑΚΕΤΟΥ</button>
   <button class="ghost" id="demoBtn">ΦΟΡΤΩΣΗ ΠΑΡΑΔΕΙΓΜΑΤΟΣ</button>
@@ -166,6 +177,7 @@
 
 <div id="checks" class="checks"></div>
 <div id="copyStatus" class="copy-status"></div>
+<div id="creatorStatus" class="creator-status"></div>
 
 <div id="output" class="output">
 
@@ -206,8 +218,9 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.1 υπολογίζει αυτόματα το έτος από το όνομα/ημερομηνία αγώνα,
-  ελέγχει αν υπάρχουν αντικρουόμενα έτη και διατηρεί το OLD DATA CHECK.
+  Η έκδοση 4.2 διατηρεί το αυτόματο έτος και το OLD DATA CHECK και προσθέτει
+  ασφαλή έλεγχο επικοινωνίας με το REGATTAHUB NEW RACE CREATOR. Το κουμπί
+  ΕΛΕΓΧΟΣ CREATOR κάνει μόνο PING και δεν δημιουργεί αρχεία.
 </div>
 
 </div>
@@ -217,6 +230,9 @@
 
 const $ = id => document.getElementById(id);
 const value = id => String($(id).value || "").trim();
+
+const CREATOR_WEB_APP_URL =
+  "https://script.google.com/macros/s/AKfycbyuI2Q3Er3zUD__rcsAldHG9a4ppeueWFGR6s2vUs56oPqRmR2PRnbcwUzcmpQHCf-o/exec";
 
 function normalizePrefix(text) {
   return String(text || "")
@@ -850,6 +866,87 @@ async function copyBlock(id) {
   );
 
 }
+
+
+async function testCreator() {
+
+  const status = $("creatorStatus");
+
+  status.className = "creator-status wait";
+  status.textContent = "Έλεγχος σύνδεσης με Creator...";
+
+  try {
+
+    const url =
+      CREATOR_WEB_APP_URL +
+      "?action=ping&_=" +
+      Date.now();
+
+    const response =
+      await fetch(
+        url,
+        {
+          method: "GET",
+          cache: "no-store",
+          redirect: "follow"
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        "HTTP " + response.status
+      );
+    }
+
+    const data =
+      await response.json();
+
+    if (
+      data &&
+      data.ok === true &&
+      data.service === "REGATTAHUB_NEW_RACE_CREATOR"
+    ) {
+
+      status.className =
+        "creator-status ok";
+
+      status.textContent =
+        "✓ CREATOR ONLINE — " +
+        data.service +
+        " v" +
+        (data.version || "?");
+
+      return;
+    }
+
+    throw new Error(
+      data && data.error
+        ? data.error
+        : "Μη αναμενόμενη απάντηση Creator"
+    );
+
+  } catch (err) {
+
+    status.className =
+      "creator-status bad";
+
+    status.textContent =
+      "✖ CREATOR OFFLINE / ΑΠΟΤΥΧΙΑ ΣΥΝΔΕΣΗΣ — " +
+      String(
+        err && err.message
+          ? err.message
+          : err
+      );
+
+  }
+
+}
+
+$("creatorCheckBtn")
+  .addEventListener(
+    "click",
+    testCreator
+  );
 
 $("checkBtn")
   .addEventListener(
