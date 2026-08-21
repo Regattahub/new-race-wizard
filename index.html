@@ -36,6 +36,12 @@
     .note { margin-top:18px; padding:12px 14px; border-left:4px solid #0d5e92; background:#eaf3f8; font-size:14px; line-height:1.5; }
     .copy-status { margin-top:8px; text-align:center; font-weight:700; color:#1b5e20; min-height:20px; }
     .creator-btn { background:#7a3e00; color:white; }
+    .create-race-btn { background:#1f6f43; color:white; }
+    .create-race-btn:disabled { opacity:.55; cursor:not-allowed; }
+    .creator-secret-note { font-size:12px; color:#52636d; margin-top:2px; }
+    .creation-result { margin-top:14px; padding:14px; border-radius:8px; background:#eef7f1; border:1px solid #b9d9c5; display:none; line-height:1.55; }
+    .creation-result.show { display:block; }
+    .creation-result a { color:#0d5e92; font-weight:700; }
     .creator-status { margin-top:14px; padding:12px 14px; border-radius:6px; font-weight:800; display:none; }
     .creator-status.ok { display:block; color:#1b5e20; background:#e8f5e9; }
     .creator-status.bad { display:block; color:#b71c1c; background:#ffebee; }
@@ -49,7 +55,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.2 — Πακέτο νέου αγώνα + σύνδεση με REGATTAHUB Creator</div>
+<div class="subtitle">Έκδοση 4.3 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -162,7 +168,13 @@
 
   <div class="field full">
     <label for="creatorUrl">New Race Creator Web App URL</label>
-    <input id="creatorUrl" value="https://script.google.com/macros/s/AKfycbyuI2Q3Er3zUD__rcsAldHG9a4ppeueWFGR6s2vUs56oPqRmR2PRnbcwUzcmpQHCf-o/exec" readonly>
+    <input id="creatorUrl" value="https://script.google.com/macros/s/AKfycbzPLIjOaB0KJ-qxyBcADXHbJCOXKtbvYObhvmjngC9YN85dWMcfqMtXOHZzNYLrq5nIow/exec" readonly>
+  </div>
+
+  <div class="field full">
+    <label for="creatorKey">Creator Key — μόνο για δημιουργία αγώνα</label>
+    <input id="creatorKey" type="password" autocomplete="off" placeholder="Πληκτρολόγησε το CREATOR_KEY όταν είσαι έτοιμος να δημιουργήσεις">
+    <div class="creator-secret-note">Το κλειδί δεν αποθηκεύεται στον Wizard και δεν μπαίνει στο πακέτο.</div>
   </div>
 
 </div>
@@ -170,6 +182,7 @@
 <div class="actions">
   <button class="primary" id="checkBtn">ΕΛΕΓΧΟΣ</button>
   <button class="creator-btn" id="creatorCheckBtn">ΕΛΕΓΧΟΣ CREATOR</button>
+  <button class="create-race-btn" id="createRaceBtn">ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ</button>
   <button class="secondary" id="generateBtn">ΔΗΜΙΟΥΡΓΙΑ ΠΑΚΕΤΟΥ</button>
   <button class="download" id="downloadBtn">ΛΗΨΗ ΠΑΚΕΤΟΥ</button>
   <button class="ghost" id="demoBtn">ΦΟΡΤΩΣΗ ΠΑΡΑΔΕΙΓΜΑΤΟΣ</button>
@@ -178,6 +191,7 @@
 <div id="checks" class="checks"></div>
 <div id="copyStatus" class="copy-status"></div>
 <div id="creatorStatus" class="creator-status"></div>
+<div id="creationResult" class="creation-result"></div>
 
 <div id="output" class="output">
 
@@ -218,9 +232,9 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.2 διατηρεί το αυτόματο έτος και το OLD DATA CHECK και προσθέτει
-  ασφαλή έλεγχο επικοινωνίας με το REGATTAHUB NEW RACE CREATOR. Το κουμπί
-  ΕΛΕΓΧΟΣ CREATOR κάνει μόνο PING και δεν δημιουργεί αρχεία.
+  Η έκδοση 4.3 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
+  Το ΕΛΕΓΧΟΣ CREATOR κάνει μόνο PING. Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα 4 spreadsheets από τα MASTER templates,
+  αφού περάσουν οι έλεγχοι και δοθεί το Creator Key.
 </div>
 
 </div>
@@ -232,7 +246,7 @@ const $ = id => document.getElementById(id);
 const value = id => String($(id).value || "").trim();
 
 const CREATOR_WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbyuI2Q3Er3zUD__rcsAldHG9a4ppeueWFGR6s2vUs56oPqRmR2PRnbcwUzcmpQHCf-o/exec";
+  "https://script.google.com/macros/s/AKfycbzPLIjOaB0KJ-qxyBcADXHbJCOXKtbvYObhvmjngC9YN85dWMcfqMtXOHZzNYLrq5nIow/exec";
 
 function normalizePrefix(text) {
   return String(text || "")
@@ -942,6 +956,236 @@ async function testCreator() {
 
 }
 
+
+function getCreateRacePayload() {
+
+  return {
+    action: "createRace",
+    creatorKey: value("creatorKey"),
+    forbiddenTokens: getForbiddenTokens(),
+    race: {
+      title: value("raceTitle"),
+      prefix: value("racePrefix"),
+      repoName: value("repoName"),
+      date: value("raceDate"),
+      expiration: value("expiration"),
+      jotformFormId: value("jotformId"),
+      organizerName: value("organizerName"),
+      organizerShortName: value("organizerName"),
+      organizerEmail: value("organizerEmail"),
+      organizerTel: value("phone"),
+      banner: bannerUrl(value("bannerUrl")),
+      osrRule: value("osrRule"),
+      daRuleActive: value("daRule"),
+      daLimit: value("daLimit"),
+      daClubSportLimit: value("daClubLimit")
+    }
+  };
+
+}
+
+function runCreateChecks() {
+
+  $("checks").innerHTML = "";
+  $("copyStatus").textContent = "";
+  $("creationResult").className = "creation-result";
+  $("creationResult").innerHTML = "";
+
+  let ok = true;
+
+  const required = [
+    ["raceTitle", "Όνομα αγώνα"],
+    ["racePrefix", "Race Prefix"],
+    ["repoName", "GitHub Repository Name"],
+    ["raceDate", "Ημερομηνία αγώνα"],
+    ["expiration", "Λήξη συμμετοχών"],
+    ["jotformId", "Jotform Form ID"],
+    ["creatorKey", "Creator Key"]
+  ];
+
+  required.forEach(([id, label]) => {
+    if (value(id)) {
+      addCheck(label + ": συμπληρωμένο", "ok");
+    } else {
+      addCheck(label + ": λείπει", "bad");
+      ok = false;
+    }
+  });
+
+  if (value("racePrefix") && !/^[A-Z0-9_]+$/.test(value("racePrefix"))) {
+    addCheck("Race Prefix: επιτρέπονται μόνο A-Z, 0-9 και underscore.", "bad");
+    ok = false;
+  }
+
+  if (value("repoName") && !looksLikeRepoName(value("repoName"))) {
+    addCheck("GitHub Repository Name: μη έγκυρη μορφή.", "bad");
+    ok = false;
+  }
+
+  if (value("jotformId") && !/^\d{10,20}$/.test(value("jotformId"))) {
+    addCheck("Jotform Form ID: μη έγκυρη μορφή.", "bad");
+    ok = false;
+  }
+
+  const yearInfo = resolveRaceYear();
+
+  if (yearInfo.uniqueYears.length !== 1) {
+    addCheck(
+      yearInfo.uniqueYears.length === 0
+        ? "Δεν βρέθηκε έτος 20xx στα στοιχεία του αγώνα."
+        : "Βρέθηκαν διαφορετικά έτη: " + yearInfo.uniqueYears.join(", "),
+      "bad"
+    );
+    ok = false;
+  } else {
+    addCheck("Έτος αγώνα: " + yearInfo.year + " — OK", "ok");
+  }
+
+  const payloadForOldData = JSON.stringify(getCreateRacePayload().race).toLocaleLowerCase("el-GR");
+  const oldHits = getForbiddenTokens().filter(token =>
+    payloadForOldData.includes(token.toLocaleLowerCase("el-GR"))
+  );
+
+  if (oldHits.length) {
+    addCheck("OLD DATA CHECK: βρέθηκαν παλιά στοιχεία: " + oldHits.join(", "), "bad");
+    ok = false;
+  } else {
+    addCheck("OLD DATA CHECK: καθαρό.", "ok");
+  }
+
+  addCheck(
+    ok
+      ? "ΕΤΟΙΜΟ για πραγματική δημιουργία των 4 spreadsheets."
+      : "Η δημιουργία σταμάτησε μέχρι να διορθωθούν τα παραπάνω.",
+    ok ? "ok" : "bad"
+  );
+
+  return ok;
+}
+
+function escapeHtml(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderCreationResult(result) {
+
+  const box = $("creationResult");
+  const already = result.alreadyExists === true;
+
+  const rows = [
+    ["SOURCE", result.sourceUrl],
+    ["TARGET", result.targetUrl],
+    ["SHARED", result.sharedUrl],
+    ["BOAT LOOKUP", result.boatLookupUrl]
+  ];
+
+  const links = rows
+    .filter(([, url]) => url)
+    .map(([label, url]) =>
+      `<div><strong>${escapeHtml(label)}:</strong> <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Άνοιγμα</a></div>`
+    )
+    .join("");
+
+  box.innerHTML =
+    `<strong>${already ? "Ο αγώνας είχε ήδη δημιουργηθεί." : "✓ Ο αγώνας δημιουργήθηκε επιτυχώς."}</strong>` +
+    `<div>Race Prefix: ${escapeHtml(result.racePrefix || "")}</div>` +
+    links +
+    `<div style="margin-top:8px"><strong>Επόμενο στάδιο:</strong> deployments και GitHub αρχεία.</div>`;
+
+  box.className = "creation-result show";
+}
+
+async function createRace() {
+
+  if (!runCreateChecks()) {
+    return;
+  }
+
+  const raceTitle = value("raceTitle");
+  const racePrefix = value("racePrefix");
+
+  const confirmed = window.confirm(
+    "Θα δημιουργηθούν πραγματικά 4 νέα spreadsheets για:\n\n" +
+    raceTitle + "\n" +
+    racePrefix + "\n\n" +
+    "Θέλεις να συνεχίσεις;"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const btn = $("createRaceBtn");
+  const status = $("creatorStatus");
+
+  btn.disabled = true;
+  status.className = "creator-status wait";
+  status.textContent = "Δημιουργία αγώνα... Μην κλείσεις τη σελίδα.";
+
+  try {
+
+    const response = await fetch(
+      CREATOR_WEB_APP_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(getCreateRacePayload()),
+        redirect: "follow"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data || data.ok !== true || !data.result) {
+      const details =
+        data && data.validation && Array.isArray(data.validation.errors)
+          ? data.validation.errors.join(" | ")
+          : (data && data.error ? data.error : "Μη αναμενόμενη απάντηση Creator");
+      throw new Error(details);
+    }
+
+    status.className = "creator-status ok";
+    status.textContent =
+      data.result.alreadyExists
+        ? "✓ CREATOR: ο ίδιος Race Prefix είχε ήδη δημιουργηθεί — δεν έγινε διπλό αντίγραφο."
+        : "✓ CREATOR: δημιουργήθηκαν επιτυχώς τα 4 spreadsheets.";
+
+    renderCreationResult(data.result);
+
+    $("creatorKey").value = "";
+
+  } catch (err) {
+
+    status.className = "creator-status bad";
+    status.textContent =
+      "✖ ΑΠΟΤΥΧΙΑ ΔΗΜΙΟΥΡΓΙΑΣ — " +
+      String(err && err.message ? err.message : err);
+
+  } finally {
+
+    btn.disabled = false;
+
+  }
+
+}
+
+$("createRaceBtn")
+  .addEventListener(
+    "click",
+    createRace
+  );
+
 $("creatorCheckBtn")
   .addEventListener(
     "click",
@@ -1015,6 +1259,9 @@ $("demoBtn")
 
       $("phone").value =
         "210 4101113";
+
+      $("creatorKey").value =
+        "";
 
       $("forbiddenTokens").value =
         "ΚΟΡΦΟΣ, KALLITHEA, ΚΑΛΛΙΘΕΑ, 262128273107351";
