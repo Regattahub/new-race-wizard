@@ -117,7 +117,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.5 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
+<div class="subtitle">Έκδοση 4.5.1 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -295,7 +295,7 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.5 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
+  Η έκδοση 4.5.1 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
   Το ΕΛΕΓΧΟΣ CREATOR κάνει μόνο PING. Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα 4 spreadsheets από τα MASTER templates,
   αφού περάσουν οι έλεγχοι και δοθεί το Creator Key.
 </div>
@@ -1426,70 +1426,6 @@ async function createRace() {
       '<p>Τεχνική πληροφορία: ' + escapeHtml(msg) + '</p>',
       []
     );
-
-  } finally {
-
-    btn.disabled = false;
-
-  }
-
-}
-
-$("createRaceBtn");
-  const status = $("creatorStatus");
-
-  btn.disabled = true;
-  status.className = "creator-status wait";
-  status.textContent = "Δημιουργία αγώνα... Μην κλείσεις τη σελίδα.";
-
-  try {
-
-    const response = await fetch(
-      CREATOR_WEB_APP_URL,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify(getCreateRacePayload()),
-        redirect: "follow"
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
-
-    const data = await response.json();
-
-    if (!data || data.ok !== true || !data.result) {
-      const details =
-        data && data.validation && Array.isArray(data.validation.errors)
-          ? data.validation.errors.join(" | ")
-          : (data && data.error ? data.error : "Μη αναμενόμενη απάντηση Creator");
-      throw new Error(details);
-    }
-
-    status.className = "creator-status ok";
-    status.textContent =
-      data.result.alreadyExists
-        ? "✓ CREATOR: ο ίδιος Race Prefix είχε ήδη δημιουργηθεί — δεν έγινε διπλό αντίγραφο."
-        : "✓ CREATOR: δημιουργήθηκαν επιτυχώς τα 4 spreadsheets.";
-
-    renderCreationResult(data.result);
-
-    if (data.result.sourceSpreadsheetId) {
-      $("settingsSheetId").value = data.result.sourceSpreadsheetId;
-    }
-
-    $("creatorKey").value = "";
-
-  } catch (err) {
-
-    status.className = "creator-status bad";
-    status.textContent =
-      "✖ ΑΠΟΤΥΧΙΑ ΔΗΜΙΟΥΡΓΙΑΣ — " +
-      String(err && err.message ? err.message : err);
 
   } finally {
 
