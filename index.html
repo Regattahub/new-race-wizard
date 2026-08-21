@@ -46,6 +46,68 @@
     .creator-status.ok { display:block; color:#1b5e20; background:#e8f5e9; }
     .creator-status.bad { display:block; color:#b71c1c; background:#ffebee; }
     .creator-status.wait { display:block; color:#143a63; background:#eaf3f8; }
+
+    .create-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 9999;
+    }
+    .create-modal-backdrop.show { display:flex; }
+    .create-modal {
+      width: min(680px, 96vw);
+      max-height: 88vh;
+      overflow:auto;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 18px 60px rgba(0,0,0,.35);
+      padding:22px;
+    }
+    .create-modal h2 {
+      margin:0 0 12px;
+      color:#143a63;
+    }
+    .create-modal .modal-body {
+      line-height:1.55;
+      font-size:15px;
+    }
+    .create-modal .modal-links {
+      display:grid;
+      gap:8px;
+      margin-top:14px;
+    }
+    .create-modal .modal-links a {
+      display:block;
+      padding:9px 11px;
+      border-radius:6px;
+      background:#eaf3f8;
+      color:#0d5e92;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .create-modal .modal-actions {
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:18px;
+    }
+    .create-modal .spinner {
+      display:inline-block;
+      width:18px;
+      height:18px;
+      border:3px solid #cfd8dc;
+      border-top-color:#0d5e92;
+      border-radius:50%;
+      animation:spin .8s linear infinite;
+      vertical-align:middle;
+      margin-right:8px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
     @media (max-width:720px){ .page{padding:10px}.panel{padding:16px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.output-head{align-items:flex-start;flex-direction:column} }
   </style>
 </head>
@@ -55,7 +117,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.4 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
+<div class="subtitle">Έκδοση 4.5 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -233,12 +295,24 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.4 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
+  Η έκδοση 4.5 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
   Το ΕΛΕΓΧΟΣ CREATOR κάνει μόνο PING. Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα 4 spreadsheets από τα MASTER templates,
   αφού περάσουν οι έλεγχοι και δοθεί το Creator Key.
 </div>
 
 </div>
+</div>
+
+
+<div id="createModalBackdrop" class="create-modal-backdrop" aria-hidden="true">
+  <div class="create-modal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+    <h2 id="createModalTitle">Δημιουργία αγώνα</h2>
+    <div id="createModalBody" class="modal-body"></div>
+    <div id="createModalLinks" class="modal-links"></div>
+    <div class="modal-actions">
+      <button id="createModalClose" class="ghost" type="button">ΚΛΕΙΣΙΜΟ</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -248,6 +322,74 @@ const value = id => String($(id).value || "").trim();
 
 const CREATOR_WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbzPLIjOaB0KJ-qxyBcADXHbJCOXKtbvYObhvmjngC9YN85dWMcfqMtXOHZzNYLrq5nIow/exec";
+
+const WIZARD_STORAGE_KEY = "regattahub_new_race_wizard_v45";
+const WIZARD_SAVE_IDS = [
+  "raceTitle",
+  "racePrefix",
+  "repoName",
+  "raceDate",
+  "expiration",
+  "jotformId",
+  "settingsSheetId",
+  "bannerUrl",
+  "organizerName",
+  "organizerEmail",
+  "phone",
+  "osrRule",
+  "daRule",
+  "daLimit",
+  "daClubLimit",
+  "forbiddenTokens",
+  "viewerEndpoint",
+  "boatLookupUrl",
+  "personLookupUrl"
+];
+
+function saveWizardState() {
+  try {
+    const data = {};
+    WIZARD_SAVE_IDS.forEach(id => {
+      const el = $(id);
+      if (el) data[id] = el.value;
+    });
+    localStorage.setItem(
+      WIZARD_STORAGE_KEY,
+      JSON.stringify(data)
+    );
+  } catch (err) {
+    console.warn("Wizard autosave failed", err);
+  }
+}
+
+function restoreWizardState() {
+  try {
+    const raw = localStorage.getItem(WIZARD_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    WIZARD_SAVE_IDS.forEach(id => {
+      const el = $(id);
+      if (
+        el &&
+        Object.prototype.hasOwnProperty.call(data, id)
+      ) {
+        el.value = data[id];
+      }
+    });
+  } catch (err) {
+    console.warn("Wizard restore failed", err);
+  }
+}
+
+function wireWizardAutosave() {
+  WIZARD_SAVE_IDS.forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("input", saveWizardState);
+    el.addEventListener("change", saveWizardState);
+  });
+}
+
 
 function normalizePrefix(text) {
   return String(text || "")
@@ -1097,6 +1239,35 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
+
+function openCreateModal(title, bodyHtml, links) {
+  const backdrop = $("createModalBackdrop");
+  $("createModalTitle").textContent = title;
+  $("createModalBody").innerHTML = bodyHtml || "";
+  $("createModalLinks").innerHTML = "";
+
+  (links || []).forEach(item => {
+    if (!item || !item.url) return;
+    const a = document.createElement("a");
+    a.href = item.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = item.label;
+    $("createModalLinks").appendChild(a);
+  });
+
+  backdrop.classList.add("show");
+  backdrop.setAttribute("aria-hidden", "false");
+}
+
+function closeCreateModal() {
+  const backdrop = $("createModalBackdrop");
+  backdrop.classList.remove("show");
+  backdrop.setAttribute("aria-hidden", "true");
+}
+
+$("createModalClose").addEventListener("click", closeCreateModal);
+
 function renderCreationResult(result) {
 
   const box = $("creationResult");
@@ -1146,6 +1317,125 @@ async function createRace() {
   }
 
   const btn = $("createRaceBtn");
+  const status = $("creatorStatus");
+
+  btn.disabled = true;
+
+  status.className = "creator-status wait";
+  status.textContent =
+    "Δημιουργία αγώνα... Μην πατήσεις ξανά το κουμπί.";
+
+  openCreateModal(
+    "Δημιουργία σε εξέλιξη",
+    '<p><span class="spinner"></span><strong>Ο Creator δημιουργεί τα 4 spreadsheets.</strong></p>' +
+    '<p>Μην κλείσεις τη σελίδα και μην πατήσεις ξανά «ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ».</p>',
+    []
+  );
+
+  try {
+
+    const response = await fetch(
+      CREATOR_WEB_APP_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(getCreateRacePayload()),
+        redirect: "follow"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data || data.ok !== true || !data.result) {
+      const details =
+        data && data.validation && Array.isArray(data.validation.errors)
+          ? data.validation.errors.join(" | ")
+          : (data && data.error
+              ? data.error
+              : "Μη αναμενόμενη απάντηση Creator");
+      throw new Error(details);
+    }
+
+    const result = data.result;
+
+    status.className = "creator-status ok";
+    status.textContent =
+      result.alreadyExists
+        ? "✓ CREATOR: ο Race Prefix είχε ήδη δημιουργηθεί — δεν έγινε διπλό αντίγραφο."
+        : "✓ CREATOR: δημιουργήθηκαν επιτυχώς τα 4 spreadsheets.";
+
+    renderCreationResult(result);
+
+    const links = [
+      { label: "Άνοιγμα SOURCE / ΣΥΜΜΕΤΟΧΕΣ", url: result.sourceUrl },
+      { label: "Άνοιγμα TARGET / ΕΛΕΓΧΟΣ ΔΕΛΤΙΩΝ", url: result.targetUrl },
+      { label: "Άνοιγμα SHARED DATA", url: result.sharedUrl },
+      { label: "Άνοιγμα BOAT LOOKUP / CREW CHANGE", url: result.boatLookupUrl }
+    ];
+
+    openCreateModal(
+      result.alreadyExists
+        ? "Ο αγώνας υπήρχε ήδη"
+        : "✓ Ο αγώνας δημιουργήθηκε",
+      '<p><strong>' + escapeHtml(result.raceTitle || raceTitle) + '</strong></p>' +
+      '<p>Race Prefix: <strong>' + escapeHtml(result.racePrefix || racePrefix) + '</strong></p>' +
+      '<p>' +
+        (result.alreadyExists
+          ? 'Δεν δημιουργήθηκαν διπλά αρχεία. Εμφανίζονται τα ήδη υπάρχοντα.'
+          : 'Δημιουργήθηκαν και ελέγχθηκαν επιτυχώς τα 4 spreadsheets.') +
+      '</p>' +
+      '<p><strong>Επόμενο στάδιο:</strong> GitHub αρχεία και deployments.</p>',
+      links
+    );
+
+    if (result.sourceSpreadsheetId) {
+      $("settingsSheetId").value =
+        result.sourceSpreadsheetId;
+      saveWizardState();
+    }
+
+    $("creatorKey").value = "";
+
+  } catch (err) {
+
+    status.className = "creator-status bad";
+
+    const msg =
+      String(
+        err && err.message
+          ? err.message
+          : err
+      );
+
+    status.textContent =
+      "✖ Η απάντηση του Creator δεν διαβάστηκε — " +
+      msg;
+
+    openCreateModal(
+      "Χρειάζεται έλεγχος",
+      '<p><strong>Η σελίδα δεν μπόρεσε να επιβεβαιώσει την τελική απάντηση του Creator.</strong></p>' +
+      '<p>Αυτό <u>δεν σημαίνει απαραίτητα</u> ότι η δημιουργία απέτυχε. Το Google Apps Script μπορεί να έχει ήδη δημιουργήσει τα αρχεία.</p>' +
+      '<p><strong>Μην πατήσεις ξανά «ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ».</strong></p>' +
+      '<p>Έλεγξε πρώτα τον φάκελο NEW_RACE_WIZARD στο Drive ή τις Executions του Creator.</p>' +
+      '<p>Τεχνική πληροφορία: ' + escapeHtml(msg) + '</p>',
+      []
+    );
+
+  } finally {
+
+    btn.disabled = false;
+
+  }
+
+}
+
+$("createRaceBtn");
   const status = $("creatorStatus");
 
   btn.disabled = true;
@@ -1305,6 +1595,11 @@ $("demoBtn")
 
     }
   );
+
+
+restoreWizardState();
+wireWizardAutosave();
+
 
 </script>
 
