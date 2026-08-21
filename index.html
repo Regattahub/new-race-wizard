@@ -55,7 +55,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.3 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
+<div class="subtitle">Έκδοση 4.4 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -90,8 +90,8 @@
   </div>
 
   <div class="field full">
-    <label for="settingsSheetId">Settings / Submissions Spreadsheet ID *</label>
-    <input id="settingsSheetId" placeholder="Google Sheet ID">
+    <label for="settingsSheetId">Settings / Submissions Spreadsheet ID — ΑΥΤΟΜΑΤΟ</label>
+    <input id="settingsSheetId" placeholder="Θα συμπληρωθεί αυτόματα μετά τη δημιουργία του SOURCE" readonly>
   </div>
 
   <div class="field full">
@@ -148,17 +148,18 @@
 </div>
 
 <div class="section-title">Υπηρεσίες</div>
+<div class="note">Για τη <strong>ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ</strong> δεν χρειάζεται να γνωρίζεις ακόμη Settings Spreadsheet ID, Viewer URL ή Boat Lookup Web App URL. Το SOURCE spreadsheet δημιουργείται αυτόματα από τον Creator, ενώ τα Web App URLs θα συμπληρωθούν στο επόμενο στάδιο των deployments.</div>
 
 <div class="grid">
 
   <div class="field full">
-    <label for="viewerEndpoint">Settings / Viewer Web App URL *</label>
-    <input id="viewerEndpoint" placeholder="https://script.google.com/macros/s/.../exec">
+    <label for="viewerEndpoint">Settings / Viewer Web App URL — ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ</label>
+    <input id="viewerEndpoint" placeholder="Θα δημιουργηθεί αργότερα με το deployment του νέου αγώνα">
   </div>
 
   <div class="field full">
-    <label for="boatLookupUrl">Boat Lookup Web App URL *</label>
-    <input id="boatLookupUrl" placeholder="https://script.google.com/macros/s/.../exec">
+    <label for="boatLookupUrl">Boat Lookup Web App URL — ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ</label>
+    <input id="boatLookupUrl" placeholder="Θα δημιουργηθεί αργότερα με το deployment του Boat Lookup">
   </div>
 
   <div class="field full">
@@ -232,7 +233,7 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.3 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
+  Η έκδοση 4.4 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
   Το ΕΛΕΓΧΟΣ CREATOR κάνει μόνο PING. Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα 4 spreadsheets από τα MASTER templates,
   αφού περάσουν οι έλεγχοι και δοθεί το Creator Key.
 </div>
@@ -348,11 +349,7 @@ function runChecks() {
     ["repoName", "GitHub Repository Name"],
     ["raceDate", "Ημερομηνία"],
     ["expiration", "Λήξη συμμετοχών"],
-    ["jotformId", "Jotform Form ID"],
-    ["settingsSheetId", "Settings Spreadsheet ID"],
-    ["viewerEndpoint", "Viewer Web App URL"],
-    ["boatLookupUrl", "Boat Lookup URL"],
-    ["personLookupUrl", "Person Lookup URL"]
+    ["jotformId", "Jotform Form ID"]
   ];
 
   required.forEach(([id, label]) => {
@@ -403,6 +400,27 @@ function runChecks() {
     }
 
   });
+
+  addCheck(
+    value("settingsSheetId")
+      ? "Settings Spreadsheet ID: υπάρχει τιμή."
+      : "Settings Spreadsheet ID: ΑΥΤΟΜΑΤΟ — θα δημιουργηθεί από τον Creator.",
+    value("settingsSheetId") ? "ok" : "warn"
+  );
+
+  addCheck(
+    value("viewerEndpoint")
+      ? "Viewer Web App URL: υπάρχει τιμή."
+      : "Viewer Web App URL: ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ — δεν απαιτείται για δημιουργία αγώνα.",
+    value("viewerEndpoint") ? "ok" : "warn"
+  );
+
+  addCheck(
+    value("boatLookupUrl")
+      ? "Boat Lookup Web App URL: υπάρχει τιμή."
+      : "Boat Lookup Web App URL: ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ — δεν απαιτείται για δημιουργία αγώνα.",
+    value("boatLookupUrl") ? "ok" : "warn"
+  );
 
   if (
     value("racePrefix") !==
@@ -690,6 +708,13 @@ function generatePackage() {
   if (!runChecks()) {
     $("output").style.display = "none";
     return false;
+  }
+
+  if (!value("settingsSheetId") || !value("viewerEndpoint") || !value("boatLookupUrl")) {
+    addCheck(
+      "Το πακέτο ρυθμίσεων είναι ΠΡΟΣΩΡΙΝΟ: Settings / Viewer / Boat Lookup δεν έχουν ακόμη ολοκληρωθεί.",
+      "warn"
+    );
   }
 
   const m = getModel();
@@ -1163,6 +1188,10 @@ async function createRace() {
 
     renderCreationResult(data.result);
 
+    if (data.result.sourceSpreadsheetId) {
+      $("settingsSheetId").value = data.result.sourceSpreadsheetId;
+    }
+
     $("creatorKey").value = "";
 
   } catch (err) {
@@ -1246,7 +1275,7 @@ $("demoBtn")
         "262291236204349";
 
       $("settingsSheetId").value =
-        "1n82B0U9POzHzGARw6ZCOwxoOidTHW9xtkyKXiQEk8u0";
+        "";
 
       $("bannerUrl").value =
         "https://drive.google.com/file/d/1uc_l2tP3ak-pivtgABxuUxvfmjlS27Cf/view?usp=sharing";
@@ -1267,10 +1296,10 @@ $("demoBtn")
         "ΚΟΡΦΟΣ, KALLITHEA, ΚΑΛΛΙΘΕΑ, 262128273107351";
 
       $("viewerEndpoint").value =
-        "https://script.google.com/macros/s/AKfycbwZHkHtIf_wc9cMTh51gOUidUjBQ1b2-1JjmlZbUPzlfO1GnYpJ76lRIP0x2Gak_G52/exec";
+        "";
 
       $("boatLookupUrl").value =
-        "https://script.google.com/macros/s/AKfycbweSV0ADfQEtl26B_lcxGjWHHgx0G8d5oYiZoK-ZvxQC4l2JPaIx9vEiWKmyDIXjvpkGQ/exec";
+        "";
 
       runChecks();
 
