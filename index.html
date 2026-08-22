@@ -38,6 +38,8 @@
     .creator-btn { background:#7a3e00; color:white; }
     .create-race-btn { background:#1f6f43; color:white; }
     .create-race-btn:disabled { opacity:.55; cursor:not-allowed; }
+    .finalize-race-btn { background:#143a63; color:white; }
+    .finalize-race-btn:disabled { opacity:.55; cursor:not-allowed; }
     .creator-secret-note { font-size:12px; color:#52636d; margin-top:2px; }
     .creation-result { margin-top:14px; padding:14px; border-radius:8px; background:#eef7f1; border:1px solid #b9d9c5; display:none; line-height:1.55; }
     .creation-result.show { display:block; }
@@ -117,7 +119,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.5.1 — Πραγματική δημιουργία νέου αγώνα μέσω REGATTAHUB Creator</div>
+<div class="subtitle">Έκδοση 4.6 — Δημιουργία και ολοκλήρωση νέου αγώνα μέσω REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -246,6 +248,7 @@
   <button class="primary" id="checkBtn">ΕΛΕΓΧΟΣ</button>
   <button class="creator-btn" id="creatorCheckBtn">ΕΛΕΓΧΟΣ CREATOR</button>
   <button class="create-race-btn" id="createRaceBtn">ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ</button>
+  <button class="finalize-race-btn" id="finalizeRaceBtn">ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ</button>
   <button class="secondary" id="generateBtn">ΔΗΜΙΟΥΡΓΙΑ ΠΑΚΕΤΟΥ</button>
   <button class="download" id="downloadBtn">ΛΗΨΗ ΠΑΚΕΤΟΥ</button>
   <button class="ghost" id="demoBtn">ΦΟΡΤΩΣΗ ΠΑΡΑΔΕΙΓΜΑΤΟΣ</button>
@@ -295,9 +298,10 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.5.1 μπορεί να στείλει τα στοιχεία του αγώνα στον REGATTAHUB NEW RACE CREATOR v1.4.
-  Το ΕΛΕΓΧΟΣ CREATOR κάνει μόνο PING. Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα 4 spreadsheets από τα MASTER templates,
-  αφού περάσουν οι έλεγχοι και δοθεί το Creator Key.
+  Η έκδοση 4.6 συνεργάζεται με τον REGATTAHUB NEW RACE CREATOR v1.6.
+  Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα spreadsheets και το GitHub repository από τα MASTER templates.
+  Μετά τα δύο Web App deployments, το ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ ενημερώνει αυτόματα τις ΡΥΘΜΙΣΕΙΣ
+  και τα GitHub index.html / crew_change.html με τα τελικά URLs.
 </div>
 
 </div>
@@ -1291,7 +1295,7 @@ function renderCreationResult(result) {
     `<strong>${already ? "Ο αγώνας είχε ήδη δημιουργηθεί." : "✓ Ο αγώνας δημιουργήθηκε επιτυχώς."}</strong>` +
     `<div>Race Prefix: ${escapeHtml(result.racePrefix || "")}</div>` +
     links +
-    `<div style="margin-top:8px"><strong>Επόμενο στάδιο:</strong> deployments και GitHub αρχεία.</div>`;
+    `<div style="margin-top:8px"><strong>Επόμενο στάδιο:</strong> κάνε τα δύο Web App deployments και μετά πάτησε ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ.</div>`;
 
   box.className = "creation-result show";
 }
@@ -1390,7 +1394,7 @@ async function createRace() {
           ? 'Δεν δημιουργήθηκαν διπλά αρχεία. Εμφανίζονται τα ήδη υπάρχοντα.'
           : 'Δημιουργήθηκαν και ελέγχθηκαν επιτυχώς τα 4 spreadsheets.') +
       '</p>' +
-      '<p><strong>Επόμενο στάδιο:</strong> GitHub αρχεία και deployments.</p>',
+      '<p><strong>Επόμενο στάδιο:</strong> κάνε τα δύο Web App deployments και μετά πάτησε ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ.</p>',
       links
     );
 
@@ -1435,10 +1439,249 @@ async function createRace() {
 
 }
 
+
+function getFinalizeRacePayload() {
+  const base = getCreateRacePayload();
+
+  return {
+    action: "finalizeRace",
+    creatorKey: value("creatorKey"),
+    forbiddenTokens: base.forbiddenTokens,
+    viewerWebAppUrl: value("viewerEndpoint"),
+    boatLookupWebAppUrl: value("boatLookupUrl"),
+    race: base.race
+  };
+}
+
+function runFinalizeChecks() {
+  $("checks").innerHTML = "";
+  $("copyStatus").textContent = "";
+
+  let ok = true;
+
+  const required = [
+    ["raceTitle", "Όνομα αγώνα"],
+    ["racePrefix", "Race Prefix"],
+    ["repoName", "GitHub Repository Name"],
+    ["raceDate", "Ημερομηνία αγώνα"],
+    ["expiration", "Λήξη συμμετοχών"],
+    ["jotformId", "Jotform Form ID"],
+    ["viewerEndpoint", "Settings / Viewer Web App URL"],
+    ["boatLookupUrl", "Boat Lookup Web App URL"],
+    ["creatorKey", "Creator Key"]
+  ];
+
+  required.forEach(([id, label]) => {
+    if (value(id)) {
+      addCheck(label + ": συμπληρωμένο", "ok");
+    } else {
+      addCheck(label + ": λείπει", "bad");
+      ok = false;
+    }
+  });
+
+  if (
+    value("viewerEndpoint") &&
+    !looksLikeScriptUrl(value("viewerEndpoint"))
+  ) {
+    addCheck(
+      "Settings / Viewer Web App URL: μη έγκυρη μορφή /exec.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  if (
+    value("boatLookupUrl") &&
+    !looksLikeScriptUrl(value("boatLookupUrl"))
+  ) {
+    addCheck(
+      "Boat Lookup Web App URL: μη έγκυρη μορφή /exec.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  const yearInfo = resolveRaceYear();
+
+  if (yearInfo.uniqueYears.length !== 1) {
+    addCheck(
+      yearInfo.uniqueYears.length === 0
+        ? "Δεν βρέθηκε έτος 20xx στα στοιχεία του αγώνα."
+        : "Βρέθηκαν διαφορετικά έτη: " +
+          yearInfo.uniqueYears.join(", "),
+      "bad"
+    );
+    ok = false;
+  } else {
+    addCheck(
+      "Έτος αγώνα: " + yearInfo.year + " — OK",
+      "ok"
+    );
+  }
+
+  addCheck(
+    ok
+      ? "ΕΤΟΙΜΟ για τελική σύνδεση ΡΥΘΜΙΣΕΩΝ + GitHub αρχείων."
+      : "Η ολοκλήρωση σταμάτησε μέχρι να διορθωθούν τα παραπάνω.",
+    ok ? "ok" : "bad"
+  );
+
+  return ok;
+}
+
+async function finalizeRace() {
+  if (!runFinalizeChecks()) {
+    return;
+  }
+
+  const raceTitle = value("raceTitle");
+  const racePrefix = value("racePrefix");
+
+  const confirmed = window.confirm(
+    "Θα ολοκληρωθεί ο υπάρχων αγώνας:\n\n" +
+    raceTitle + "\n" +
+    racePrefix + "\n\n" +
+    "Θα ενημερωθούν οι ΡΥΘΜΙΣΕΙΣ και τα GitHub αρχεία " +
+    "με τα τελικά Viewer / Boat Lookup URLs.\n\n" +
+    "Δεν θα δημιουργηθούν νέα spreadsheets.\n\n" +
+    "Θέλεις να συνεχίσεις;"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const btn = $("finalizeRaceBtn");
+  const status = $("creatorStatus");
+
+  btn.disabled = true;
+
+  status.className = "creator-status wait";
+  status.textContent =
+    "Ολοκλήρωση αγώνα... Μην πατήσεις ξανά το κουμπί.";
+
+  openCreateModal(
+    "Ολοκλήρωση σε εξέλιξη",
+    '<p><span class="spinner"></span><strong>Ο Creator ενημερώνει ΡΥΘΜΙΣΕΙΣ και GitHub αρχεία.</strong></p>' +
+    '<p>Δεν δημιουργούνται νέα spreadsheets.</p>',
+    []
+  );
+
+  try {
+    const response = await fetch(
+      CREATOR_WEB_APP_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(getFinalizeRacePayload()),
+        redirect: "follow"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data || data.ok !== true || !data.result) {
+      const details =
+        data && data.validation && Array.isArray(data.validation.errors)
+          ? data.validation.errors.join(" | ")
+          : (
+              data && data.error
+                ? data.error
+                : "Μη αναμενόμενη απάντηση Creator"
+            );
+
+      throw new Error(details);
+    }
+
+    const result = data.result;
+
+    status.className = "creator-status ok";
+    status.textContent =
+      "✓ Ο ΑΓΩΝΑΣ ΟΛΟΚΛΗΡΩΘΗΚΕ — ΡΥΘΜΙΣΕΙΣ και GitHub αρχεία ενημερώθηκαν.";
+
+    if (result.sourceSpreadsheetId) {
+      $("settingsSheetId").value =
+        result.sourceSpreadsheetId;
+    }
+
+    if (result.viewerWebAppUrl) {
+      $("viewerEndpoint").value =
+        result.viewerWebAppUrl;
+    }
+
+    if (result.boatLookupWebAppUrl) {
+      $("boatLookupUrl").value =
+        result.boatLookupWebAppUrl;
+    }
+
+    saveWizardState();
+
+    const repoUrl =
+      "https://github.com/Regattahub/" +
+      encodeURIComponent(value("repoName"));
+
+    const appUrl =
+      "https://regattahub.github.io/" +
+      encodeURIComponent(value("repoName")) +
+      "/";
+
+    openCreateModal(
+      "✓ Ο αγώνας ολοκληρώθηκε",
+      '<p><strong>' + escapeHtml(result.raceTitle || raceTitle) + '</strong></p>' +
+      '<p>Race Prefix: <strong>' + escapeHtml(result.racePrefix || racePrefix) + '</strong></p>' +
+      '<p>Οι τελικές διευθύνσεις γράφτηκαν στις ΡΥΘΜΙΣΕΙΣ και στα GitHub αρχεία.</p>' +
+      '<p><strong>Επόμενο:</strong> ενεργοποίηση/έλεγχος GitHub Pages και λειτουργική δοκιμή.</p>',
+      [
+        { label: "Άνοιγμα GitHub repository", url: repoUrl },
+        { label: "Άνοιγμα εφαρμογής αγώνα", url: appUrl },
+        { label: "Άνοιγμα SOURCE / ΣΥΜΜΕΤΟΧΕΣ", url: result.sourceUrl }
+      ]
+    );
+
+    $("creatorKey").value = "";
+
+  } catch (err) {
+    const msg =
+      String(
+        err && err.message
+          ? err.message
+          : err
+      );
+
+    status.className = "creator-status bad";
+    status.textContent =
+      "✖ ΑΠΟΤΥΧΙΑ ΟΛΟΚΛΗΡΩΣΗΣ — " + msg;
+
+    openCreateModal(
+      "Η ολοκλήρωση δεν επιβεβαιώθηκε",
+      '<p><strong>Δεν έγινε επιτυχής επιβεβαίωση της τελικής σύνδεσης.</strong></p>' +
+      '<p>Μην πατήσεις ξανά αμέσως. Έλεγξε πρώτα τις Executions του Creator.</p>' +
+      '<p>Τεχνική πληροφορία: ' + escapeHtml(msg) + '</p>',
+      []
+    );
+
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 $("createRaceBtn")
   .addEventListener(
     "click",
     createRace
+  );
+
+$("finalizeRaceBtn")
+  .addEventListener(
+    "click",
+    finalizeRace
   );
 
 $("creatorCheckBtn")
