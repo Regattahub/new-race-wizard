@@ -119,7 +119,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.6 — Δημιουργία και ολοκλήρωση νέου αγώνα μέσω REGATTAHUB Creator</div>
+<div class="subtitle">Έκδοση 4.7 — Δημιουργία και ολοκλήρωση νέου αγώνα μέσω REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -141,6 +141,11 @@
   <div class="field">
     <label for="raceDate">Ημερομηνία αγώνα *</label>
     <input id="raceDate" placeholder="π.χ. 19 & 20 Σεπτεμβρίου 2027">
+  </div>
+
+  <div class="field">
+    <label for="raceEndDate">Τελευταία ημέρα αγώνα (DD/MM/YYYY) *</label>
+    <input id="raceEndDate" inputmode="numeric" placeholder="π.χ. 20/09/2027">
   </div>
 
   <div class="field">
@@ -298,7 +303,7 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.6 συνεργάζεται με τον REGATTAHUB NEW RACE CREATOR v1.6.
+  Η έκδοση 4.7 συνεργάζεται με τον REGATTAHUB NEW RACE CREATOR.
   Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα spreadsheets και το GitHub repository από τα MASTER templates.
   Μετά τα δύο Web App deployments, το ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ ενημερώνει αυτόματα τις ΡΥΘΜΙΣΕΙΣ
   και τα GitHub index.html / crew_change.html με τα τελικά URLs.
@@ -333,6 +338,7 @@ const WIZARD_SAVE_IDS = [
   "racePrefix",
   "repoName",
   "raceDate",
+  "raceEndDate",
   "expiration",
   "jotformId",
   "settingsSheetId",
@@ -460,12 +466,14 @@ function extractYears(text) {
 function resolveRaceYear() {
   const titleYears = extractYears(value("raceTitle"));
   const dateYears = extractYears(value("raceDate"));
+  const endDateYears = extractYears(value("raceEndDate"));
   const prefixYears = extractYears(value("racePrefix"));
   const repoYears = extractYears(value("repoName"));
 
   const allYears = [
     ...titleYears,
     ...dateYears,
+    ...endDateYears,
     ...prefixYears,
     ...repoYears
   ];
@@ -477,6 +485,7 @@ function resolveRaceYear() {
     uniqueYears,
     titleYears,
     dateYears,
+    endDateYears,
     prefixYears,
     repoYears
   };
@@ -494,6 +503,7 @@ function runChecks() {
     ["racePrefix", "Race Prefix"],
     ["repoName", "GitHub Repository Name"],
     ["raceDate", "Ημερομηνία"],
+    ["raceEndDate", "Τελευταία ημέρα αγώνα"],
     ["expiration", "Λήξη συμμετοχών"],
     ["jotformId", "Jotform Form ID"]
   ];
@@ -578,6 +588,17 @@ function runChecks() {
     );
   }
 
+  if (
+    value("raceEndDate") &&
+    !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value("raceEndDate"))
+  ) {
+    addCheck(
+      "Τελευταία ημέρα αγώνα: χρησιμοποίησε μορφή DD/MM/YYYY.",
+      "bad"
+    );
+    ok = false;
+  }
+
   const yearInfo = resolveRaceYear();
 
   if (yearInfo.uniqueYears.length === 0) {
@@ -646,6 +667,7 @@ function getModel() {
     racePrefix: value("racePrefix"),
     repoName,
     raceDate: value("raceDate"),
+    raceEndDate: value("raceEndDate"),
     expiration: value("expiration"),
 
     jotformId,
@@ -716,6 +738,7 @@ function buildSettingsBlock(m) {
     ["RACE_TITLE", m.raceTitle],
     ["SHOW_RACE_TITLE", "YES"],
     ["RACE_DATE", m.raceDate],
+    ["RACE_END_DATE", m.raceEndDate],
     ["SUBMIT_EXPIRATION", m.expiration],
     ["VIEWER", m.viewerUrl],
     ["PUBLIC_VIEWER", m.publicViewerUrl],
@@ -752,6 +775,7 @@ const CONFIG = {
   RACE_PREFIX: "${m.racePrefix}",
   EVENT_TITLE: "${m.raceTitle}",
   RACE_DATE: "${m.raceDate}",
+  RACE_END_DATE: "${m.raceEndDate}",
   SUBMIT_EXPIRATION: "${m.expiration}",
   SETTINGS_SPREADSHEET_ID: DEFAULT_SETTINGS_SPREADSHEET_ID,
   OSR_RULE: "${m.osrRule}",
@@ -1139,6 +1163,7 @@ function getCreateRacePayload() {
       prefix: value("racePrefix"),
       repoName: value("repoName"),
       date: value("raceDate"),
+      raceEndDate: value("raceEndDate"),
       expiration: value("expiration"),
       jotformFormId: value("jotformId"),
       organizerName: value("organizerName"),
@@ -1169,6 +1194,7 @@ function runCreateChecks() {
     ["racePrefix", "Race Prefix"],
     ["repoName", "GitHub Repository Name"],
     ["raceDate", "Ημερομηνία αγώνα"],
+    ["raceEndDate", "Τελευταία ημέρα αγώνα"],
     ["expiration", "Λήξη συμμετοχών"],
     ["jotformId", "Jotform Form ID"],
     ["creatorKey", "Creator Key"]
@@ -1195,6 +1221,17 @@ function runCreateChecks() {
 
   if (value("jotformId") && !/^\d{10,20}$/.test(value("jotformId"))) {
     addCheck("Jotform Form ID: μη έγκυρη μορφή.", "bad");
+    ok = false;
+  }
+
+  if (
+    value("raceEndDate") &&
+    !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value("raceEndDate"))
+  ) {
+    addCheck(
+      "Τελευταία ημέρα αγώνα: χρησιμοποίησε μορφή DD/MM/YYYY.",
+      "bad"
+    );
     ok = false;
   }
 
@@ -1464,6 +1501,7 @@ function runFinalizeChecks() {
     ["racePrefix", "Race Prefix"],
     ["repoName", "GitHub Repository Name"],
     ["raceDate", "Ημερομηνία αγώνα"],
+    ["raceEndDate", "Τελευταία ημέρα αγώνα"],
     ["expiration", "Λήξη συμμετοχών"],
     ["jotformId", "Jotform Form ID"],
     ["viewerEndpoint", "Settings / Viewer Web App URL"],
@@ -1497,6 +1535,17 @@ function runFinalizeChecks() {
   ) {
     addCheck(
       "Boat Lookup Web App URL: μη έγκυρη μορφή /exec.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  if (
+    value("raceEndDate") &&
+    !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value("raceEndDate"))
+  ) {
+    addCheck(
+      "Τελευταία ημέρα αγώνα: χρησιμοποίησε μορφή DD/MM/YYYY.",
       "bad"
     );
     ok = false;
@@ -1736,6 +1785,9 @@ $("demoBtn")
 
       $("raceDate").value =
         "19 & 20 Σεπτεμβρίου 2026";
+
+      $("raceEndDate").value =
+        "20/09/2026";
 
       $("expiration").value =
         "17 ΣΕΠΤΕΜΒΡΙΟΥ ώρα: 21:00";
