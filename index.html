@@ -192,6 +192,14 @@
   </div>
 
   <div class="field">
+  <label for="eioFlow">Ροή πληρώματος</label>
+  <select id="eioFlow">
+    <option value="NO">RegattaHub — δική μας φόρμα</option>
+    <option value="YES">ΕΙΟ — φόρμα ΕΙΟ</option>
+  </select>
+</div>
+
+  <div class="field">
     <label for="daRule">Dynamic Allowance</label>
     <select id="daRule">
       <option value="YES">YES</option>
@@ -347,6 +355,7 @@ const WIZARD_SAVE_IDS = [
   "organizerEmail",
   "phone",
   "osrRule",
+  "eioFlow",
   "daRule",
   "daLimit",
   "daClubLimit",
@@ -693,6 +702,9 @@ function getModel() {
     osrRule:
       value("osrRule"),
 
+    eioFlow:
+  value("eioFlow"),
+    
     daRule:
       value("daRule"),
 
@@ -749,6 +761,7 @@ function buildSettingsBlock(m) {
     ["ORGANIZER_TEL", m.phone],
     ["SETTINGS_ENDPOINT", m.settingsEndpoint],
     ["OSR_RULE", m.osrRule],
+    ["EIO_FLOW", m.eioFlow],
     ["JOTFORM_FORM_ID", m.jotformId],
     ["APP_URL", m.appUrl],
     ["CREW_CHANGE_URL", m.crewChangeUrl],
@@ -779,6 +792,7 @@ const CONFIG = {
   SUBMIT_EXPIRATION: "${m.expiration}",
   SETTINGS_SPREADSHEET_ID: DEFAULT_SETTINGS_SPREADSHEET_ID,
   OSR_RULE: "${m.osrRule}",
+  EIO_FLOW: "${m.eioFlow}",
   ORGANIZER_BANNER: "${m.banner}",
   ORGANIZER_NAME: "${m.organizerName}",
   ORGANIZER_SHORT_NAME: "${m.organizerName}",
@@ -1172,6 +1186,7 @@ function getCreateRacePayload() {
       organizerTel: value("phone"),
       banner: bannerUrl(value("bannerUrl")),
       osrRule: value("osrRule"),
+      eioFlow: value("eioFlow"),
       daRuleActive: value("daRule"),
       daLimit: value("daLimit"),
       daClubSportLimit: value("daClubLimit")
