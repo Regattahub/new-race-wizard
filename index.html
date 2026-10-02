@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
@@ -119,7 +119,7 @@
 <div class="panel">
 
 <h1>RegattaHub New Race Wizard</h1>
-<div class="subtitle">Έκδοση 4.7 — Δημιουργία και ολοκλήρωση νέου αγώνα μέσω REGATTAHUB Creator</div>
+<div class="subtitle">Έκδοση 4.9 — Δημιουργία και ολοκλήρωση νέου αγώνα μέσω REGATTAHUB Creator</div>
 
 <div class="grid">
 
@@ -322,7 +322,7 @@
 </div>
 
 <div class="note">
-  Η έκδοση 4.7 συνεργάζεται με τον REGATTAHUB NEW RACE CREATOR.
+  Η έκδοση 4.9 συνεργάζεται με τον REGATTAHUB NEW RACE CREATOR.
   Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα spreadsheets και το GitHub repository από τα MASTER templates.
   Μετά τα δύο Web App deployments, το ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ ενημερώνει αυτόματα τις ΡΥΘΜΙΣΕΙΣ
   και τα GitHub index.html / crew_change.html με τα τελικά URLs.
@@ -1359,7 +1359,8 @@ function renderCreationResult(result) {
     ["SOURCE", result.sourceUrl],
     ["TARGET", result.targetUrl],
     ["SHARED", result.sharedUrl],
-    ["BOAT LOOKUP", result.boatLookupUrl]
+    ["BOAT LOOKUP", result.boatLookupUrl],
+    ["ΚΕΝΤΡΟ ΑΓΩΝΑ", result.raceCenterUrl]
   ];
 
   const links = rows
@@ -1733,6 +1734,7 @@ async function finalizeRace() {
       [
         { label: "Άνοιγμα GitHub repository", url: repoUrl },
         { label: "Άνοιγμα εφαρμογής αγώνα", url: appUrl },
+        { label: "Άνοιγμα Κέντρου Αγώνα", url: result.raceCenterUrl || appUrl + "race-center.html" },
         { label: "Άνοιγμα SOURCE / ΣΥΜΜΕΤΟΧΕΣ", url: result.sourceUrl }
       ]
     );
@@ -1880,4 +1882,5 @@ wireWizardAutosave();
 
 </body>
 </html>
+
 
