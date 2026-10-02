@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
@@ -159,6 +159,11 @@
   </div>
 
   <div class="field full">
+    <label for="destinationFolderUrl">Κεντρικός φάκελος αποθήκευσης αγώνων *</label>
+    <input id="destinationFolderUrl" placeholder="Σύνδεσμος φακέλου Google Drive ή Folder ID" required>
+  </div>
+
+  <div class="field full">
     <label for="settingsSheetId">Settings / Submissions Spreadsheet ID — ΑΥΤΟΜΑΤΟ</label>
     <input id="settingsSheetId" placeholder="Θα συμπληρωθεί αυτόματα μετά τη δημιουργία του SOURCE" readonly>
   </div>
@@ -176,6 +181,12 @@
   <div class="field">
     <label for="organizerEmail">Email διοργανωτή</label>
     <input id="organizerEmail" placeholder="π.χ. info@example.gr">
+  </div>
+
+  <div class="field">
+    <label for="organizerAccessEmail">Email πρόσβασης διοργανωτή</label>
+    <input id="organizerAccessEmail" type="email" required autocomplete="email" placeholder="Λογαριασμός Google ομίλου ή γραμματείας">
+    <small>Πρόσβαση ανάγνωσης στα PDF του συγκεκριμένου αγώνα.</small>
   </div>
 
   <div class="field">
@@ -246,7 +257,7 @@
 
   <div class="field full">
     <label for="creatorUrl">New Race Creator Web App URL</label>
-    <input id="creatorUrl" value="https://script.google.com/macros/s/AKfycbzPLIjOaB0KJ-qxyBcADXHbJCOXKtbvYObhvmjngC9YN85dWMcfqMtXOHZzNYLrq5nIow/exec" readonly>
+    <input id="creatorUrl" value="https://script.google.com/macros/s/AKfycbzMa_WXRbxABK6BKRGEgvFQy2rorkaVMBucIoqThOsjJY_a5fGHIT5-GtdrkzcR83XX/exec" readonly>
   </div>
 
   <div class="field full">
@@ -338,7 +349,7 @@ const $ = id => document.getElementById(id);
 const value = id => String($(id).value || "").trim();
 
 const CREATOR_WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbzPLIjOaB0KJ-qxyBcADXHbJCOXKtbvYObhvmjngC9YN85dWMcfqMtXOHZzNYLrq5nIow/exec";
+  "https://script.google.com/macros/s/AKfycbzMa_WXRbxABK6BKRGEgvFQy2rorkaVMBucIoqThOsjJY_a5fGHIT5-GtdrkzcR83XX/exec";
 
 const WIZARD_STORAGE_KEY = "regattahub_new_race_wizard_v45";
 const WIZARD_SAVE_IDS = [
@@ -353,6 +364,8 @@ const WIZARD_SAVE_IDS = [
   "bannerUrl",
   "organizerName",
   "organizerEmail",
+  "organizerAccessEmail",
+  "destinationFolderUrl",
   "phone",
   "osrRule",
   "eioFlow",
@@ -695,6 +708,8 @@ function getModel() {
 
     organizerEmail:
       value("organizerEmail"),
+    organizerAccessEmail: value("organizerAccessEmail"),
+    destinationFolderUrl: value("destinationFolderUrl"),
 
     phone:
       value("phone"),
@@ -758,6 +773,7 @@ function buildSettingsBlock(m) {
     ["ORGANIZER_NAME", m.organizerName],
     ["ORGANIZER_SHORT_NAME", m.organizerName],
     ["ORGANIZER_EMAIL", m.organizerEmail],
+    ["ORGANIZER_ACCESS_EMAIL", m.organizerAccessEmail],
     ["ORGANIZER_TEL", m.phone],
     ["SETTINGS_ENDPOINT", m.settingsEndpoint],
     ["OSR_RULE", m.osrRule],
@@ -797,6 +813,7 @@ const CONFIG = {
   ORGANIZER_NAME: "${m.organizerName}",
   ORGANIZER_SHORT_NAME: "${m.organizerName}",
   ORGANIZER_EMAIL: "${m.organizerEmail}",
+  ORGANIZER_ACCESS_EMAIL: "${m.organizerAccessEmail}",
   ORGANIZER_TEL: "${m.phone}",
   SHOW_RACE_TITLE: "YES",
   JOTFORM_FORM_ID: "${m.jotformId}",
@@ -1183,6 +1200,8 @@ function getCreateRacePayload() {
       organizerName: value("organizerName"),
       organizerShortName: value("organizerName"),
       organizerEmail: value("organizerEmail"),
+      organizerAccessEmail: value("organizerAccessEmail"),
+      destinationFolderUrl: value("destinationFolderUrl"),
       organizerTel: value("phone"),
       banner: bannerUrl(value("bannerUrl")),
       osrRule: value("osrRule"),
@@ -1212,6 +1231,8 @@ function runCreateChecks() {
     ["raceEndDate", "Τελευταία ημέρα αγώνα"],
     ["expiration", "Λήξη συμμετοχών"],
     ["jotformId", "Jotform Form ID"],
+    ["organizerAccessEmail", "Email πρόσβασης διοργανωτή"],
+    ["destinationFolderUrl", "Κεντρικός φάκελος αποθήκευσης αγώνων"],
     ["creatorKey", "Creator Key"]
   ];
 
@@ -1223,6 +1244,11 @@ function runCreateChecks() {
       ok = false;
     }
   });
+
+  if (value("organizerAccessEmail") && !/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$/.test(value("organizerAccessEmail"))) {
+    addCheck("Email πρόσβασης διοργανωτή: μη έγκυρη μορφή.", "bad");
+    ok = false;
+  }
 
   if (value("racePrefix") && !/^[A-Z0-9_]+$/.test(value("racePrefix"))) {
     addCheck("Race Prefix: επιτρέπονται μόνο A-Z, 0-9 και underscore.", "bad");
@@ -1521,6 +1547,8 @@ function runFinalizeChecks() {
     ["jotformId", "Jotform Form ID"],
     ["viewerEndpoint", "Settings / Viewer Web App URL"],
     ["boatLookupUrl", "Boat Lookup Web App URL"],
+    ["organizerAccessEmail", "Email πρόσβασης διοργανωτή"],
+    ["destinationFolderUrl", "Κεντρικός φάκελος αποθήκευσης αγώνων"],
     ["creatorKey", "Creator Key"]
   ];
 
@@ -1821,6 +1849,7 @@ $("demoBtn")
 
       $("organizerEmail").value =
         "";
+      $("organizerAccessEmail").value = "";
 
       $("phone").value =
         "210 4101113";
@@ -1851,3 +1880,4 @@ wireWizardAutosave();
 
 </body>
 </html>
+
