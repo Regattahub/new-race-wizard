@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RegattaHub - Wizard TEST V2 (READ-ONLY)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Arial,sans-serif; background:#0d5e92; color:#263238; }
+    .page { max-width:1050px; margin:0 auto; padding:24px; }
+    .panel { background:#f4f7f5; border-radius:10px; padding:24px; box-shadow:0 4px 18px rgba(0,0,0,.18); }
+    h1 { margin:0 0 8px; text-align:center; color:#0d5e92; }
+    .subtitle { text-align:center; margin-bottom:24px; color:#52636d; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 18px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field.full { grid-column:1/-1; }
+    label { font-weight:700; font-size:14px; }
+    input,select { width:100%; border:1px solid #aab7bf; border-radius:6px; padding:10px 12px; font-size:15px; background:white; }
+    .section-title { margin:28px 0 12px; padding-top:18px; border-top:1px solid #cbd5da; font-size:19px; color:#143a63; font-weight:800; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
+    button { border:0; border-radius:6px; padding:11px 18px; font-size:15px; font-weight:800; cursor:pointer; }
+    .primary { background:#4d8b1f; color:white; }
+    .secondary { background:#607d8b; color:white; }
+    .ghost { background:#e3e9ec; color:#263238; }
+    .download { background:#143a63; color:white; }
+    .checks { margin-top:18px; display:grid; gap:8px; }
+    .check { padding:10px 12px; border-radius:6px; background:#eef2f3; font-size:14px; font-weight:700; }
+    .ok { color:#1b5e20; background:#e8f5e9; }
+    .bad { color:#b71c1c; background:#ffebee; }
+    .warn { color:#8a5a00; background:#fff8e1; }
+    .output { margin-top:20px; display:none; }
+    .output-card { margin-top:18px; border:1px solid #cbd5da; border-radius:8px; overflow:hidden; background:white; }
+    .output-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:#eaf3f8; border-bottom:1px solid #cbd5da; font-weight:800; color:#143a63; }
+    .copy-btn { padding:7px 12px; font-size:13px; background:#0d5e92; color:white; }
+    pre { margin:0; white-space:pre-wrap; word-break:break-word; background:#16232c; color:#e8f1f5; padding:14px; max-height:520px; overflow:auto; font-size:13px; }
+    .note { margin-top:18px; padding:12px 14px; border-left:4px solid #0d5e92; background:#eaf3f8; font-size:14px; line-height:1.5; }
+    .copy-status { margin-top:8px; text-align:center; font-weight:700; color:#1b5e20; min-height:20px; }
+    .creator-btn { background:#7a3e00; color:white; }
+    .create-race-btn { background:#1f6f43; color:white; }
+    .create-race-btn:disabled { opacity:.55; cursor:not-allowed; }
+    .finalize-race-btn { background:#143a63; color:white; }
+    .finalize-race-btn:disabled { opacity:.55; cursor:not-allowed; }
+    .creator-secret-note { font-size:12px; color:#52636d; margin-top:2px; }
+    .creation-result { margin-top:14px; padding:14px; border-radius:8px; background:#eef7f1; border:1px solid #b9d9c5; display:none; line-height:1.55; }
+    .creation-result.show { display:block; }
+    .creation-result a { color:#0d5e92; font-weight:700; }
+    .creator-status { margin-top:14px; padding:12px 14px; border-radius:6px; font-weight:800; display:none; }
+    .creator-status.ok { display:block; color:#1b5e20; background:#e8f5e9; }
+    .creator-status.bad { display:block; color:#b71c1c; background:#ffebee; }
+    .creator-status.wait { display:block; color:#143a63; background:#eaf3f8; }
+
+    .create-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 9999;
+    }
+    .create-modal-backdrop.show { display:flex; }
+    .create-modal {
+      width: min(680px, 96vw);
+      max-height: 88vh;
+      overflow:auto;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 18px 60px rgba(0,0,0,.35);
+      padding:22px;
+    }
+    .create-modal h2 {
+      margin:0 0 12px;
+      color:#143a63;
+    }
+    .create-modal .modal-body {
+      line-height:1.55;
+      font-size:15px;
+    }
+    .create-modal .modal-links {
+      display:grid;
+      gap:8px;
+      margin-top:14px;
+    }
+    .create-modal .modal-links a {
+      display:block;
+      padding:9px 11px;
+      border-radius:6px;
+      background:#eaf3f8;
+      color:#0d5e92;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .create-modal .modal-actions {
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:18px;
+    }
+    .create-modal .spinner {
+      display:inline-block;
+      width:18px;
+      height:18px;
+      border:3px solid #cfd8dc;
+      border-top-color:#0d5e92;
+      border-radius:50%;
+      animation:spin .8s linear infinite;
+      vertical-align:middle;
+      margin-right:8px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media (max-width:720px){ .page{padding:10px}.panel{padding:16px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.output-head{align-items:flex-start;flex-direction:column} }
+  </style>
+</head>
+<body>
+
+<div class="page">
+<div class="panel">
+
+<h1>RegattaHub New Race Wizard — TEST V2</h1>
+<div role="status" style="padding:12px 14px;margin:12px 0;border:2px solid #a15700;background:#fff3d4;color:#5f3500;font-weight:700;border-radius:8px">ΔΟΚΙΜΑΣΤΙΚΟ WIZARD — ΜΟΝΟ ΕΛΕΓΧΟΙ. Η δημιουργία και η ολοκλήρωση αγώνα είναι απενεργοποιημένες. Συνδέεται στον Creator TEST V2, όχι στον κανονικό Creator.</div>
+<div class="subtitle">Έκδοση 4.9 TEST V2 — μόνο έλεγχοι, χωρίς δημιουργία αγώνα</div>
+
+<div class="grid">
+
+  <div class="field">
+    <label for="raceTitle">Όνομα αγώνα *</label>
+    <input id="raceTitle" placeholder="π.χ. ΑΓΚΙΣΤΡΙ 2027">
+  </div>
+
+  <div class="field">
+    <label for="racePrefix">Race Prefix *</label>
+    <input id="racePrefix" placeholder="π.χ. AGKISTRI_2027">
+  </div>
+
+  <div class="field">
+    <label for="repoName">GitHub Repository Name *</label>
+    <input id="repoName" placeholder="π.χ. agkistri-2027">
+  </div>
+
+  <div class="field">
+    <label for="raceDate">Ημερομηνία αγώνα *</label>
+    <input id="raceDate" placeholder="π.χ. 19 & 20 Σεπτεμβρίου 2027">
+  </div>
+
+  <div class="field">
+    <label for="raceEndDate">Τελευταία ημέρα αγώνα (DD/MM/YYYY) *</label>
+    <input id="raceEndDate" inputmode="numeric" placeholder="π.χ. 20/09/2027">
+  </div>
+
+  <div class="field">
+    <label for="expiration">Λήξη συμμετοχών *</label>
+    <input id="expiration" placeholder="π.χ. 17 ΣΕΠΤΕΜΒΡΙΟΥ ώρα: 21:00">
+  </div>
+
+  <div class="field">
+    <label for="jotformId">Jotform Form ID *</label>
+    <input id="jotformId" inputmode="numeric" placeholder="π.χ. 262291236204349">
+  </div>
+
+  <div class="field full">
+    <label for="destinationFolderUrl">Κεντρικός φάκελος αποθήκευσης αγώνων *</label>
+    <input id="destinationFolderUrl" placeholder="Σύνδεσμος φακέλου Google Drive ή Folder ID" required>
+  </div>
+
+  <div class="field full">
+    <label for="settingsSheetId">Settings / Submissions Spreadsheet ID — ΑΥΤΟΜΑΤΟ</label>
+    <input id="settingsSheetId" placeholder="Θα συμπληρωθεί αυτόματα μετά τη δημιουργία του SOURCE" readonly>
+  </div>
+
+  <div class="field full">
+    <label for="bannerUrl">Banner URL</label>
+    <input id="bannerUrl" placeholder="Google Drive share URL ή thumbnail URL">
+  </div>
+
+  <div class="field">
+    <label for="organizerName">Διοργανωτής</label>
+    <input id="organizerName" placeholder="π.χ. ΙΟΠ-ΔΕΗ / ΝΑΟΕΦΚ">
+  </div>
+
+  <div class="field">
+    <label for="organizerEmail">Email διοργανωτή</label>
+    <input id="organizerEmail" placeholder="π.χ. info@example.gr">
+  </div>
+
+  <div class="field">
+    <label for="organizerAccessEmail">Email πρόσβασης διοργανωτή</label>
+    <input id="organizerAccessEmail" type="email" required autocomplete="email" placeholder="Λογαριασμός Google ομίλου ή γραμματείας">
+    <small>Πρόσβαση ανάγνωσης στα PDF του συγκεκριμένου αγώνα.</small>
+  </div>
+
+  <div class="field">
+    <label for="phone">Τηλέφωνο</label>
+    <input id="phone" placeholder="π.χ. 210 4101113">
+  </div>
+
+  <div class="field">
+    <label for="osrRule">WS OSR Rule</label>
+    <select id="osrRule">
+      <option value="YES">YES</option>
+      <option value="NO">NO</option>
+    </select>
+  </div>
+
+  <div class="field">
+  <label for="eioFlow">Ροή πληρώματος</label>
+  <select id="eioFlow">
+    <option value="NO">RegattaHub — δική μας φόρμα</option>
+    <option value="YES">ΕΙΟ — φόρμα ΕΙΟ</option>
+  </select>
+</div>
+
+  <div class="field">
+    <label for="daRule">Dynamic Allowance</label>
+    <select id="daRule">
+      <option value="YES">YES</option>
+      <option value="NO">NO</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="daLimit">DA Limit</label>
+    <input id="daLimit" value="0.230">
+  </div>
+
+  <div class="field">
+    <label for="daClubLimit">DA Club/Sport Limit</label>
+    <input id="daClubLimit" value="0.300">
+  </div>
+
+  <div class="field full">
+    <label for="forbiddenTokens">OLD DATA CHECK — παλιά ονόματα / IDs (χωρισμένα με κόμμα)</label>
+    <input id="forbiddenTokens" placeholder="π.χ. ΚΟΡΦΟΣ, KALLITHEA, ΚΑΛΛΙΘΕΑ, παλιό Jotform ID">
+  </div>
+
+</div>
+
+<div class="section-title">Υπηρεσίες</div>
+<div class="note">Για τη <strong>ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ</strong> δεν χρειάζεται να γνωρίζεις ακόμη Settings Spreadsheet ID, Viewer URL ή Boat Lookup Web App URL. Το SOURCE spreadsheet δημιουργείται αυτόματα από τον Creator, ενώ τα Web App URLs θα συμπληρωθούν στο επόμενο στάδιο των deployments.</div>
+
+<div class="grid">
+
+  <div class="field full">
+    <label for="viewerEndpoint">Settings / Viewer Web App URL — ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ</label>
+    <input id="viewerEndpoint" placeholder="Θα δημιουργηθεί αργότερα με το deployment του νέου αγώνα">
+  </div>
+
+  <div class="field full">
+    <label for="boatLookupUrl">Boat Lookup Web App URL — ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ</label>
+    <input id="boatLookupUrl" placeholder="Θα δημιουργηθεί αργότερα με το deployment του Boat Lookup">
+  </div>
+
+  <div class="field full">
+    <label for="personLookupUrl">Person Lookup Web App URL *</label>
+    <input id="personLookupUrl" value="https://script.google.com/macros/s/AKfycbw-zgZZeHRC6S5_f1xGkTwx-wXcFNq9z2O4cfhzAHSULQNDrwCp88vcvgU-617pgcg1/exec">
+  </div>
+
+  <div class="field full">
+    <label for="creatorUrl">New Race Creator Web App URL</label>
+    <input id="creatorUrl" value="https://script.google.com/macros/s/AKfycbwOUXDnwqBv8NWtDet-EVDHvRKRcPBKI_8r5QI3__WyN00IJW0Ovcm5qpBnqUGExpbZ/exec" readonly>
+  </div>
+
+  <div class="field full">
+    <label for="creatorKey">Creator Key — μόνο για δημιουργία αγώνα</label>
+    <input id="creatorKey" type="password" autocomplete="off" placeholder="Πληκτρολόγησε το CREATOR_KEY όταν είσαι έτοιμος να δημιουργήσεις">
+    <div class="creator-secret-note">Το κλειδί δεν αποθηκεύεται στον Wizard και δεν μπαίνει στο πακέτο.</div>
+  </div>
+
+</div>
+
+<div class="actions">
+  <button class="primary" id="checkBtn">ΕΛΕΓΧΟΣ</button>
+  <button class="creator-btn" id="creatorCheckBtn">ΕΛΕΓΧΟΣ CREATOR</button>
+  <button class="create-race-btn" id="createRaceBtn">ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ</button>
+  <button class="finalize-race-btn" id="finalizeRaceBtn">ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ</button>
+  <button class="secondary" id="generateBtn">ΔΗΜΙΟΥΡΓΙΑ ΠΑΚΕΤΟΥ</button>
+  <button class="download" id="downloadBtn">ΛΗΨΗ ΠΑΚΕΤΟΥ</button>
+  <button class="ghost" id="demoBtn">ΦΟΡΤΩΣΗ ΠΑΡΑΔΕΙΓΜΑΤΟΣ</button>
+</div>
+
+<div id="checks" class="checks"></div>
+<div id="copyStatus" class="copy-status"></div>
+<div id="creatorStatus" class="creator-status"></div>
+<div id="creationResult" class="creation-result"></div>
+
+<div id="output" class="output">
+
+  <div class="section-title">Έτοιμο πακέτο νέου αγώνα</div>
+
+  <div class="output-card">
+    <div class="output-head">
+      <span>1. ΡΥΘΜΙΣΕΙΣ Google Sheet</span>
+      <button class="copy-btn" data-copy="settingsBlock">ΑΝΤΙΓΡΑΦΗ</button>
+    </div>
+    <pre id="settingsBlock"></pre>
+  </div>
+
+  <div class="output-card">
+    <div class="output-head">
+      <span>2. CONFIG για index.html</span>
+      <button class="copy-btn" data-copy="indexConfigBlock">ΑΝΤΙΓΡΑΦΗ</button>
+    </div>
+    <pre id="indexConfigBlock"></pre>
+  </div>
+
+  <div class="output-card">
+    <div class="output-head">
+      <span>3. CONFIG για crew_change.html</span>
+      <button class="copy-btn" data-copy="crewConfigBlock">ΑΝΤΙΓΡΑΦΗ</button>
+    </div>
+    <pre id="crewConfigBlock"></pre>
+  </div>
+
+  <div class="output-card">
+    <div class="output-head">
+      <span>4. URLs αγώνα</span>
+      <button class="copy-btn" data-copy="urlsBlock">ΑΝΤΙΓΡΑΦΗ</button>
+    </div>
+    <pre id="urlsBlock"></pre>
+  </div>
+
+</div>
+
+<div class="note">
+  Η έκδοση 4.9 συνεργάζεται με τον REGATTAHUB NEW RACE CREATOR.
+  Το ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ δημιουργεί τα spreadsheets και το GitHub repository από τα MASTER templates.
+  Μετά τα δύο Web App deployments, το ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ ενημερώνει αυτόματα τις ΡΥΘΜΙΣΕΙΣ
+  και τα GitHub index.html / crew_change.html με τα τελικά URLs.
+</div>
+
+</div>
+</div>
+
+
+<div id="createModalBackdrop" class="create-modal-backdrop" aria-hidden="true">
+  <div class="create-modal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+    <h2 id="createModalTitle">Δημιουργία αγώνα</h2>
+    <div id="createModalBody" class="modal-body"></div>
+    <div id="createModalLinks" class="modal-links"></div>
+    <div class="modal-actions">
+      <button id="createModalClose" class="ghost" type="button">ΚΛΕΙΣΙΜΟ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const $ = id => document.getElementById(id);
+const value = id => String($(id).value || "").trim();
+
+const CREATOR_WEB_APP_URL =
+  "https://script.google.com/macros/s/AKfycbwOUXDnwqBv8NWtDet-EVDHvRKRcPBKI_8r5QI3__WyN00IJW0Ovcm5qpBnqUGExpbZ/exec";
+
+const WIZARD_STORAGE_KEY = "regattahub_new_race_wizard_test_v2_readonly";
+const WIZARD_SAVE_IDS = [
+  "raceTitle",
+  "racePrefix",
+  "repoName",
+  "raceDate",
+  "raceEndDate",
+  "expiration",
+  "jotformId",
+  "settingsSheetId",
+  "bannerUrl",
+  "organizerName",
+  "organizerEmail",
+  "organizerAccessEmail",
+  "destinationFolderUrl",
+  "phone",
+  "osrRule",
+  "eioFlow",
+  "daRule",
+  "daLimit",
+  "daClubLimit",
+  "forbiddenTokens",
+  "viewerEndpoint",
+  "boatLookupUrl",
+  "personLookupUrl"
+];
+
+function saveWizardState() {
+  try {
+    const data = {};
+    WIZARD_SAVE_IDS.forEach(id => {
+      const el = $(id);
+      if (el) data[id] = el.value;
+    });
+    localStorage.setItem(
+      WIZARD_STORAGE_KEY,
+      JSON.stringify(data)
+    );
+  } catch (err) {
+    console.warn("Wizard autosave failed", err);
+  }
+}
+
+function restoreWizardState() {
+  try {
+    const raw = localStorage.getItem(WIZARD_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    WIZARD_SAVE_IDS.forEach(id => {
+      const el = $(id);
+      if (
+        el &&
+        Object.prototype.hasOwnProperty.call(data, id)
+      ) {
+        el.value = data[id];
+      }
+    });
+  } catch (err) {
+    console.warn("Wizard restore failed", err);
+  }
+}
+
+function wireWizardAutosave() {
+  WIZARD_SAVE_IDS.forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("input", saveWizardState);
+    el.addEventListener("change", saveWizardState);
+  });
+}
+
+
+function normalizePrefix(text) {
+  return String(text || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[ΆΑ]/g, "A")
+    .replace(/[ΈΕ]/g, "E")
+    .replace(/[ΉΗ]/g, "H")
+    .replace(/[ΊΪΙ]/g, "I")
+    .replace(/[ΌΟ]/g, "O")
+    .replace(/[ΎΫΥ]/g, "Y")
+    .replace(/[ΏΩ]/g, "W")
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function extractDriveId(url) {
+  const t = String(url || "").trim();
+  const m =
+    t.match(/\/file\/d\/([A-Za-z0-9_-]+)/) ||
+    t.match(/[?&]id=([A-Za-z0-9_-]+)/);
+
+  return m ? m[1] : "";
+}
+
+function bannerUrl(url) {
+  const id = extractDriveId(url);
+
+  return id
+    ? "https://drive.google.com/thumbnail?id=" + id + "&sz=w2000"
+    : String(url || "").trim();
+}
+
+function looksLikeScriptUrl(url) {
+  return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/
+    .test(String(url || "").trim());
+}
+
+function looksLikeRepoName(name) {
+  return /^[a-z0-9._-]+$/.test(String(name || "").trim());
+}
+
+function addCheck(text, type) {
+  const div = document.createElement("div");
+  div.className = "check " + type;
+  div.textContent =
+    (type === "ok" ? "✓ " : type === "bad" ? "✖ " : "! ") + text;
+
+  $("checks").appendChild(div);
+}
+
+function getForbiddenTokens() {
+  return value("forbiddenTokens")
+    .split(",")
+    .map(x => x.trim())
+    .filter(Boolean);
+}
+
+function extractYears(text) {
+  const years = String(text || "").match(/\b20\d{2}\b/g) || [];
+  return [...new Set(years)];
+}
+
+function resolveRaceYear() {
+  const titleYears = extractYears(value("raceTitle"));
+  const dateYears = extractYears(value("raceDate"));
+  const endDateYears = extractYears(value("raceEndDate"));
+  const prefixYears = extractYears(value("racePrefix"));
+  const repoYears = extractYears(value("repoName"));
+
+  const allYears = [
+    ...titleYears,
+    ...dateYears,
+    ...endDateYears,
+    ...prefixYears,
+    ...repoYears
+  ];
+
+  const uniqueYears = [...new Set(allYears)];
+
+  return {
+    year: uniqueYears.length === 1 ? uniqueYears[0] : "",
+    uniqueYears,
+    titleYears,
+    dateYears,
+    endDateYears,
+    prefixYears,
+    repoYears
+  };
+}
+
+function runChecks() {
+
+  $("checks").innerHTML = "";
+  $("copyStatus").textContent = "";
+
+  let ok = true;
+
+  const required = [
+    ["raceTitle", "Όνομα αγώνα"],
+    ["racePrefix", "Race Prefix"],
+    ["repoName", "GitHub Repository Name"],
+    ["raceDate", "Ημερομηνία"],
+    ["raceEndDate", "Τελευταία ημέρα αγώνα"],
+    ["expiration", "Λήξη συμμετοχών"],
+    ["jotformId", "Jotform Form ID"]
+  ];
+
+  required.forEach(([id, label]) => {
+
+    if (value(id)) {
+      addCheck(label + ": συμπληρωμένο", "ok");
+    } else {
+      addCheck(label + ": λείπει", "bad");
+      ok = false;
+    }
+
+  });
+
+  if (
+    value("jotformId") &&
+    !/^\d{10,20}$/.test(value("jotformId"))
+  ) {
+    addCheck("Το Jotform Form ID δεν μοιάζει έγκυρο.", "bad");
+    ok = false;
+  }
+
+  if (
+    value("repoName") &&
+    !looksLikeRepoName(value("repoName"))
+  ) {
+    addCheck(
+      "Το GitHub Repository Name πρέπει να περιέχει μόνο πεζά λατινικά γράμματα, αριθμούς, τελεία, παύλα ή underscore.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  [
+    ["viewerEndpoint", "Viewer"],
+    ["boatLookupUrl", "Boat Lookup"],
+    ["personLookupUrl", "Person Lookup"]
+  ].forEach(([id, label]) => {
+
+    if (
+      value(id) &&
+      !looksLikeScriptUrl(value(id))
+    ) {
+      addCheck(
+        label + ": το URL δεν έχει την αναμενόμενη μορφή Web App /exec.",
+        "bad"
+      );
+      ok = false;
+    }
+
+  });
+
+  addCheck(
+    value("settingsSheetId")
+      ? "Settings Spreadsheet ID: υπάρχει τιμή."
+      : "Settings Spreadsheet ID: ΑΥΤΟΜΑΤΟ — θα δημιουργηθεί από τον Creator.",
+    value("settingsSheetId") ? "ok" : "warn"
+  );
+
+  addCheck(
+    value("viewerEndpoint")
+      ? "Viewer Web App URL: υπάρχει τιμή."
+      : "Viewer Web App URL: ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ — δεν απαιτείται για δημιουργία αγώνα.",
+    value("viewerEndpoint") ? "ok" : "warn"
+  );
+
+  addCheck(
+    value("boatLookupUrl")
+      ? "Boat Lookup Web App URL: υπάρχει τιμή."
+      : "Boat Lookup Web App URL: ΕΠΟΜΕΝΟ ΣΤΑΔΙΟ — δεν απαιτείται για δημιουργία αγώνα.",
+    value("boatLookupUrl") ? "ok" : "warn"
+  );
+
+  if (
+    value("racePrefix") !==
+    normalizePrefix(value("racePrefix"))
+  ) {
+    addCheck(
+      "Το Race Prefix προτείνεται να είναι μόνο A-Z, 0-9 και underscore.",
+      "warn"
+    );
+  }
+
+  if (
+    value("raceEndDate") &&
+    !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value("raceEndDate"))
+  ) {
+    addCheck(
+      "Τελευταία ημέρα αγώνα: χρησιμοποίησε μορφή DD/MM/YYYY.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  const yearInfo = resolveRaceYear();
+
+  if (yearInfo.uniqueYears.length === 0) {
+    addCheck(
+      "Δεν βρέθηκε έτος 20xx στο όνομα, στην ημερομηνία, στο Race Prefix ή στο repository.",
+      "bad"
+    );
+    ok = false;
+  } else if (yearInfo.uniqueYears.length > 1) {
+    addCheck(
+      "Βρέθηκαν διαφορετικά έτη: " +
+      yearInfo.uniqueYears.join(", ") +
+      ". Διόρθωσε τα στοιχεία πριν συνεχίσεις.",
+      "bad"
+    );
+    ok = false;
+  } else {
+    addCheck(
+      "Έτος αγώνα: " + yearInfo.year + " — συμφωνεί σε όλα τα στοιχεία όπου εμφανίζεται.",
+      "ok"
+    );
+  }
+
+  addCheck(
+    value("bannerUrl")
+      ? "Banner URL αναγνωρίστηκε."
+      : "Δεν έχει δοθεί banner. Μπορεί να προστεθεί αργότερα.",
+    value("bannerUrl") ? "ok" : "warn"
+  );
+
+  addCheck(
+    ok
+      ? "Βασικός έλεγχος: ΕΤΟΙΜΟ για παραγωγή πακέτου."
+      : "Βασικός έλεγχος: υπάρχουν υποχρεωτικά πεδία που χρειάζονται διόρθωση.",
+    ok ? "ok" : "bad"
+  );
+
+  return ok;
+}
+
+function getModel() {
+
+  const settingsId = value("settingsSheetId");
+  const viewer = value("viewerEndpoint");
+  const jotformId = value("jotformId");
+  const repoName = value("repoName");
+
+  const yearInfo = resolveRaceYear();
+  const year = yearInfo.year;
+
+  const appUrl =
+    repoName
+      ? "https://regattahub.github.io/" + repoName + "/"
+      : "";
+
+  const crewChangeUrl =
+    appUrl
+      ? appUrl + "crew_change.html"
+      : "";
+
+  return {
+
+    year,
+
+    raceTitle: value("raceTitle"),
+    racePrefix: value("racePrefix"),
+    repoName,
+    raceDate: value("raceDate"),
+    raceEndDate: value("raceEndDate"),
+    expiration: value("expiration"),
+
+    jotformId,
+    jotformUrl:
+      jotformId
+        ? "https://form.jotform.com/" + jotformId
+        : "",
+
+    settingsId,
+
+    banner:
+      bannerUrl(value("bannerUrl")),
+
+    organizerName:
+      value("organizerName"),
+
+    organizerEmail:
+      value("organizerEmail"),
+    organizerAccessEmail: value("organizerAccessEmail"),
+    destinationFolderUrl: value("destinationFolderUrl"),
+
+    phone:
+      value("phone"),
+
+    osrRule:
+      value("osrRule"),
+
+    eioFlow:
+  value("eioFlow"),
+    
+    daRule:
+      value("daRule"),
+
+    daLimit:
+      value("daLimit"),
+
+    daClubLimit:
+      value("daClubLimit"),
+
+    viewer,
+
+    viewerUrl:
+      viewer && settingsId
+        ? viewer + "?settings=" + encodeURIComponent(settingsId)
+        : "",
+
+    publicViewerUrl:
+      viewer && settingsId
+        ? viewer + "?settings=" + encodeURIComponent(settingsId) + "&public=1"
+        : "",
+
+    settingsEndpoint:
+      viewer && settingsId
+        ? viewer + "?action=settings&settings=" + encodeURIComponent(settingsId)
+        : "",
+
+    boatLookupUrl:
+      value("boatLookupUrl"),
+
+    personLookupUrl:
+      value("personLookupUrl"),
+
+    appUrl,
+    crewChangeUrl
+
+  };
+}
+
+function buildSettingsBlock(m) {
+
+  const rows = [
+    ["RACE_PREFIX", m.racePrefix],
+    ["RACE_TITLE", m.raceTitle],
+    ["SHOW_RACE_TITLE", "YES"],
+    ["RACE_DATE", m.raceDate],
+    ["RACE_END_DATE", m.raceEndDate],
+    ["SUBMIT_EXPIRATION", m.expiration],
+    ["VIEWER", m.viewerUrl],
+    ["PUBLIC_VIEWER", m.publicViewerUrl],
+    ["ORGANIZER_BANNER", m.banner],
+    ["ORGANIZER_NAME", m.organizerName],
+    ["ORGANIZER_SHORT_NAME", m.organizerName],
+    ["ORGANIZER_EMAIL", m.organizerEmail],
+    ["ORGANIZER_ACCESS_EMAIL", m.organizerAccessEmail],
+    ["ORGANIZER_TEL", m.phone],
+    ["SETTINGS_ENDPOINT", m.settingsEndpoint],
+    ["OSR_RULE", m.osrRule],
+    ["EIO_FLOW", m.eioFlow],
+    ["JOTFORM_FORM_ID", m.jotformId],
+    ["APP_URL", m.appUrl],
+    ["CREW_CHANGE_URL", m.crewChangeUrl],
+    ["DA_RULE_ACTIVE", m.daRule],
+    ["DA_LIMIT", m.daLimit],
+    ["DA_CLUB_SPORT_LIMIT", m.daClubLimit],
+    ["YEAR", m.year]
+  ];
+
+  return rows
+    .map(([k, v]) => k + "\t" + v)
+    .join("\n");
+}
+
+function buildIndexConfigBlock(m) {
+
+  return `const SETTINGS_WEB_APP_URL =
+  "${m.viewer}";
+
+const DEFAULT_SETTINGS_SPREADSHEET_ID =
+  "${m.settingsId}";
+
+const CONFIG = {
+  RACE_PREFIX: "${m.racePrefix}",
+  EVENT_TITLE: "${m.raceTitle}",
+  RACE_DATE: "${m.raceDate}",
+  RACE_END_DATE: "${m.raceEndDate}",
+  SUBMIT_EXPIRATION: "${m.expiration}",
+  SETTINGS_SPREADSHEET_ID: DEFAULT_SETTINGS_SPREADSHEET_ID,
+  OSR_RULE: "${m.osrRule}",
+  EIO_FLOW: "${m.eioFlow}",
+  ORGANIZER_BANNER: "${m.banner}",
+  ORGANIZER_NAME: "${m.organizerName}",
+  ORGANIZER_SHORT_NAME: "${m.organizerName}",
+  ORGANIZER_EMAIL: "${m.organizerEmail}",
+  ORGANIZER_ACCESS_EMAIL: "${m.organizerAccessEmail}",
+  ORGANIZER_TEL: "${m.phone}",
+  SHOW_RACE_TITLE: "YES",
+  JOTFORM_FORM_ID: "${m.jotformId}",
+  JOTFORM_BASE_URL: "${m.jotformUrl}",
+  BOAT_LOOKUP_URL: "${m.boatLookupUrl}",
+  PERSON_LOOKUP_URL: "${m.personLookupUrl}",
+  APP_URL: "${m.appUrl}",
+  CREW_CHANGE_URL: "${m.crewChangeUrl}",
+  YEAR: "${m.year}",
+  INFO_PHONE: "${m.phone}"
+};`;
+
+}
+
+function buildCrewConfigBlock(m) {
+
+  return `const CONFIG = {
+  EVENT_TITLE: "${m.raceTitle}",
+  SETTINGS_ENDPOINT: "${m.settingsEndpoint}",
+  BOAT_LOOKUP_URL: "${m.boatLookupUrl}",
+  PERSON_LOOKUP_URL: "${m.personLookupUrl}",
+  JOTFORM_BASE_URL: "${m.jotformUrl}",
+  CREW_CHANGE_FORM_URL: "${m.jotformUrl}",
+  EVENT_LOGO: "https://github.com/jsamartzis-png/logos/blob/main/logo_EntryFlow_removebg-preview.png?raw=true",
+  EVENT_BACKGROUND: "background.jpg",
+  YEAR: "${m.year}",
+  INFO_PHONE: "${m.phone}"
+};`;
+
+}
+
+function buildUrlsBlock(m) {
+
+  return `GitHub repository:
+https://github.com/Regattahub/${m.repoName}
+
+Main application:
+${m.appUrl}
+
+Crew change:
+${m.crewChangeUrl}
+
+Jotform:
+${m.jotformUrl}
+
+Viewer:
+${m.viewerUrl}
+
+Public viewer:
+${m.publicViewerUrl}
+
+Settings endpoint:
+${m.settingsEndpoint}
+
+Boat lookup:
+${m.boatLookupUrl}
+
+Person lookup:
+${m.personLookupUrl}
+
+Race year:
+${m.year}`;
+
+}
+
+function buildAllText(m) {
+
+  return [
+    buildSettingsBlock(m),
+    buildIndexConfigBlock(m),
+    buildCrewConfigBlock(m),
+    buildUrlsBlock(m)
+  ].join("\n\n");
+
+}
+
+function findForbiddenHits(text) {
+
+  const haystack =
+    String(text || "").toLocaleLowerCase("el-GR");
+
+  return getForbiddenTokens()
+    .filter(token =>
+      haystack.includes(
+        token.toLocaleLowerCase("el-GR")
+      )
+    );
+
+}
+
+function generatePackage() {
+
+  if (!runChecks()) {
+    $("output").style.display = "none";
+    return false;
+  }
+
+  if (!value("settingsSheetId") || !value("viewerEndpoint") || !value("boatLookupUrl")) {
+    addCheck(
+      "Το πακέτο ρυθμίσεων είναι ΠΡΟΣΩΡΙΝΟ: Settings / Viewer / Boat Lookup δεν έχουν ακόμη ολοκληρωθεί.",
+      "warn"
+    );
+  }
+
+  const m = getModel();
+
+  const settingsBlock =
+    buildSettingsBlock(m);
+
+  const indexBlock =
+    buildIndexConfigBlock(m);
+
+  const crewBlock =
+    buildCrewConfigBlock(m);
+
+  const urlsBlock =
+    buildUrlsBlock(m);
+
+  const allText =
+    [
+      settingsBlock,
+      indexBlock,
+      crewBlock,
+      urlsBlock
+    ].join("\n\n");
+
+  const hits =
+    findForbiddenHits(allText);
+
+  if (hits.length) {
+
+    addCheck(
+      "OLD DATA CHECK: βρέθηκαν απαγορευμένα παλιά στοιχεία: " +
+      hits.join(", "),
+      "bad"
+    );
+
+    addCheck(
+      "Η παραγωγή πακέτου σταμάτησε μέχρι να διορθωθούν.",
+      "bad"
+    );
+
+    $("output").style.display = "none";
+
+    return false;
+
+  }
+
+  addCheck(
+    "OLD DATA CHECK: καθαρό — δεν βρέθηκαν παλιά ονόματα ή IDs.",
+    "ok"
+  );
+
+  $("settingsBlock").textContent =
+    settingsBlock;
+
+  $("indexConfigBlock").textContent =
+    indexBlock;
+
+  $("crewConfigBlock").textContent =
+    crewBlock;
+
+  $("urlsBlock").textContent =
+    urlsBlock;
+
+  $("output").style.display =
+    "block";
+
+  $("output").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+  return true;
+}
+
+function buildDownloadText() {
+
+  const m = getModel();
+
+  return `REGATTAHUB NEW RACE PACKAGE
+===========================
+
+RACE: ${m.raceTitle}
+YEAR: ${m.year}
+REPOSITORY: ${m.repoName}
+
+1. ΡΥΘΜΙΣΕΙΣ GOOGLE SHEET
+--------------------------
+${buildSettingsBlock(m)}
+
+2. CONFIG INDEX.HTML
+--------------------
+${buildIndexConfigBlock(m)}
+
+3. CONFIG CREW_CHANGE.HTML
+--------------------------
+${buildCrewConfigBlock(m)}
+
+4. URLS
+-------
+${buildUrlsBlock(m)}
+`;
+
+}
+
+function downloadPackage() {
+
+  if (!generatePackage()) {
+    return;
+  }
+
+  const m =
+    getModel();
+
+  const text =
+    buildDownloadText();
+
+  const blob =
+    new Blob(
+      [text],
+      {
+        type:
+          "text/plain;charset=utf-8"
+      }
+    );
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement("a");
+
+  a.href =
+    url;
+
+  a.download =
+    (m.repoName || "new-race") +
+    "-package.txt";
+
+  document.body
+    .appendChild(a);
+
+  a.click();
+
+  document.body
+    .removeChild(a);
+
+  URL.revokeObjectURL(url);
+
+}
+
+async function copyBlock(id) {
+
+  const text =
+    $(id).textContent;
+
+  try {
+
+    await navigator.clipboard
+      .writeText(text);
+
+  } catch (e) {
+
+    const a =
+      document.createElement("textarea");
+
+    a.value =
+      text;
+
+    document.body
+      .appendChild(a);
+
+    a.select();
+
+    document.execCommand("copy");
+
+    document.body
+      .removeChild(a);
+
+  }
+
+  $("copyStatus").textContent =
+    "✓ Αντιγράφηκε στο πρόχειρο.";
+
+  setTimeout(
+    () =>
+      $("copyStatus").textContent = "",
+    2500
+  );
+
+}
+
+
+async function testCreator() {
+
+  const status = $("creatorStatus");
+
+  status.className = "creator-status wait";
+  status.textContent = "Έλεγχος σύνδεσης με Creator...";
+
+  try {
+
+    const url =
+      CREATOR_WEB_APP_URL +
+      "?action=ping&_=" +
+      Date.now();
+
+    const response =
+      await fetch(
+        url,
+        {
+          method: "GET",
+          cache: "no-store",
+          redirect: "follow"
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        "HTTP " + response.status
+      );
+    }
+
+    const data =
+      await response.json();
+
+    if (
+      data &&
+      data.ok === true &&
+      data.service === "REGATTAHUB_NEW_RACE_CREATOR"
+    ) {
+
+      status.className =
+        "creator-status ok";
+
+      status.textContent =
+        "✓ CREATOR ONLINE — " +
+        data.service +
+        " v" +
+        (data.version || "?");
+
+      return;
+    }
+
+    throw new Error(
+      data && data.error
+        ? data.error
+        : "Μη αναμενόμενη απάντηση Creator"
+    );
+
+  } catch (err) {
+
+    status.className =
+      "creator-status bad";
+
+    status.textContent =
+      "✖ CREATOR OFFLINE / ΑΠΟΤΥΧΙΑ ΣΥΝΔΕΣΗΣ — " +
+      String(
+        err && err.message
+          ? err.message
+          : err
+      );
+
+  }
+
+}
+
+
+function getCreateRacePayload() {
+
+  return {
+    action: "createRace",
+    creatorKey: value("creatorKey"),
+    forbiddenTokens: getForbiddenTokens(),
+    race: {
+      title: value("raceTitle"),
+      prefix: value("racePrefix"),
+      repoName: value("repoName"),
+      date: value("raceDate"),
+      raceEndDate: value("raceEndDate"),
+      expiration: value("expiration"),
+      jotformFormId: value("jotformId"),
+      organizerName: value("organizerName"),
+      organizerShortName: value("organizerName"),
+      organizerEmail: value("organizerEmail"),
+      organizerAccessEmail: value("organizerAccessEmail"),
+      destinationFolderUrl: value("destinationFolderUrl"),
+      organizerTel: value("phone"),
+      banner: bannerUrl(value("bannerUrl")),
+      osrRule: value("osrRule"),
+      eioFlow: value("eioFlow"),
+      daRuleActive: value("daRule"),
+      daLimit: value("daLimit"),
+      daClubSportLimit: value("daClubLimit")
+    }
+  };
+
+}
+
+function runCreateChecks() {
+
+  $("checks").innerHTML = "";
+  $("copyStatus").textContent = "";
+  $("creationResult").className = "creation-result";
+  $("creationResult").innerHTML = "";
+
+  let ok = true;
+
+  const required = [
+    ["raceTitle", "Όνομα αγώνα"],
+    ["racePrefix", "Race Prefix"],
+    ["repoName", "GitHub Repository Name"],
+    ["raceDate", "Ημερομηνία αγώνα"],
+    ["raceEndDate", "Τελευταία ημέρα αγώνα"],
+    ["expiration", "Λήξη συμμετοχών"],
+    ["jotformId", "Jotform Form ID"],
+    ["organizerAccessEmail", "Email πρόσβασης διοργανωτή"],
+    ["destinationFolderUrl", "Κεντρικός φάκελος αποθήκευσης αγώνων"],
+    ["creatorKey", "Creator Key"]
+  ];
+
+  required.forEach(([id, label]) => {
+    if (value(id)) {
+      addCheck(label + ": συμπληρωμένο", "ok");
+    } else {
+      addCheck(label + ": λείπει", "bad");
+      ok = false;
+    }
+  });
+
+  if (value("organizerAccessEmail") && !/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$/.test(value("organizerAccessEmail"))) {
+    addCheck("Email πρόσβασης διοργανωτή: μη έγκυρη μορφή.", "bad");
+    ok = false;
+  }
+
+  if (value("racePrefix") && !/^[A-Z0-9_]+$/.test(value("racePrefix"))) {
+    addCheck("Race Prefix: επιτρέπονται μόνο A-Z, 0-9 και underscore.", "bad");
+    ok = false;
+  }
+
+  if (value("repoName") && !looksLikeRepoName(value("repoName"))) {
+    addCheck("GitHub Repository Name: μη έγκυρη μορφή.", "bad");
+    ok = false;
+  }
+
+  if (value("jotformId") && !/^\d{10,20}$/.test(value("jotformId"))) {
+    addCheck("Jotform Form ID: μη έγκυρη μορφή.", "bad");
+    ok = false;
+  }
+
+  if (
+    value("raceEndDate") &&
+    !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value("raceEndDate"))
+  ) {
+    addCheck(
+      "Τελευταία ημέρα αγώνα: χρησιμοποίησε μορφή DD/MM/YYYY.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  const yearInfo = resolveRaceYear();
+
+  if (yearInfo.uniqueYears.length !== 1) {
+    addCheck(
+      yearInfo.uniqueYears.length === 0
+        ? "Δεν βρέθηκε έτος 20xx στα στοιχεία του αγώνα."
+        : "Βρέθηκαν διαφορετικά έτη: " + yearInfo.uniqueYears.join(", "),
+      "bad"
+    );
+    ok = false;
+  } else {
+    addCheck("Έτος αγώνα: " + yearInfo.year + " — OK", "ok");
+  }
+
+  const payloadForOldData = JSON.stringify(getCreateRacePayload().race).toLocaleLowerCase("el-GR");
+  const oldHits = getForbiddenTokens().filter(token =>
+    payloadForOldData.includes(token.toLocaleLowerCase("el-GR"))
+  );
+
+  if (oldHits.length) {
+    addCheck("OLD DATA CHECK: βρέθηκαν παλιά στοιχεία: " + oldHits.join(", "), "bad");
+    ok = false;
+  } else {
+    addCheck("OLD DATA CHECK: καθαρό.", "ok");
+  }
+
+  addCheck(
+    ok
+      ? "ΕΤΟΙΜΟ για πραγματική δημιουργία των 4 spreadsheets."
+      : "Η δημιουργία σταμάτησε μέχρι να διορθωθούν τα παραπάνω.",
+    ok ? "ok" : "bad"
+  );
+
+  return ok;
+}
+
+function escapeHtml(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+function openCreateModal(title, bodyHtml, links) {
+  const backdrop = $("createModalBackdrop");
+  $("createModalTitle").textContent = title;
+  $("createModalBody").innerHTML = bodyHtml || "";
+  $("createModalLinks").innerHTML = "";
+
+  (links || []).forEach(item => {
+    if (!item || !item.url) return;
+    const a = document.createElement("a");
+    a.href = item.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = item.label;
+    $("createModalLinks").appendChild(a);
+  });
+
+  backdrop.classList.add("show");
+  backdrop.setAttribute("aria-hidden", "false");
+}
+
+function closeCreateModal() {
+  const backdrop = $("createModalBackdrop");
+  backdrop.classList.remove("show");
+  backdrop.setAttribute("aria-hidden", "true");
+}
+
+$("createModalClose").addEventListener("click", closeCreateModal);
+
+function renderCreationResult(result) {
+
+  const box = $("creationResult");
+  const already = result.alreadyExists === true;
+
+  const rows = [
+    ["SOURCE", result.sourceUrl],
+    ["TARGET", result.targetUrl],
+    ["SHARED", result.sharedUrl],
+    ["BOAT LOOKUP", result.boatLookupUrl],
+    ["ΚΕΝΤΡΟ ΑΓΩΝΑ", result.raceCenterUrl]
+  ];
+
+  const links = rows
+    .filter(([, url]) => url)
+    .map(([label, url]) =>
+      `<div><strong>${escapeHtml(label)}:</strong> <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Άνοιγμα</a></div>`
+    )
+    .join("");
+
+  box.innerHTML =
+    `<strong>${already ? "Ο αγώνας είχε ήδη δημιουργηθεί." : "✓ Ο αγώνας δημιουργήθηκε επιτυχώς."}</strong>` +
+    `<div>Race Prefix: ${escapeHtml(result.racePrefix || "")}</div>` +
+    links +
+    `<div style="margin-top:8px"><strong>Επόμενο στάδιο:</strong> κάνε τα δύο Web App deployments και μετά πάτησε ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ.</div>`;
+
+  box.className = "creation-result show";
+}
+
+async function createRace() {
+  alert("TEST V2: Οι εντολές δημιουργίας/ολοκλήρωσης αγώνα είναι κλειδωμένες σε αυτή τη δοκιμαστική σελίδα.");
+  return;
+
+
+  if (!runCreateChecks()) {
+    return;
+  }
+
+  const raceTitle = value("raceTitle");
+  const racePrefix = value("racePrefix");
+
+  const confirmed = window.confirm(
+    "Θα δημιουργηθούν πραγματικά 4 νέα spreadsheets για:\n\n" +
+    raceTitle + "\n" +
+    racePrefix + "\n\n" +
+    "Θέλεις να συνεχίσεις;"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const btn = $("createRaceBtn");
+  const status = $("creatorStatus");
+
+  btn.disabled = true;
+
+  status.className = "creator-status wait";
+  status.textContent =
+    "Δημιουργία αγώνα... Μην πατήσεις ξανά το κουμπί.";
+
+  openCreateModal(
+    "Δημιουργία σε εξέλιξη",
+    '<p><span class="spinner"></span><strong>Ο Creator δημιουργεί τα 4 spreadsheets.</strong></p>' +
+    '<p>Μην κλείσεις τη σελίδα και μην πατήσεις ξανά «ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ».</p>',
+    []
+  );
+
+  try {
+
+    const response = await fetch(
+      CREATOR_WEB_APP_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(getCreateRacePayload()),
+        redirect: "follow"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data || data.ok !== true || !data.result) {
+      const details =
+        data && data.validation && Array.isArray(data.validation.errors)
+          ? data.validation.errors.join(" | ")
+          : (data && data.error
+              ? data.error
+              : "Μη αναμενόμενη απάντηση Creator");
+      throw new Error(details);
+    }
+
+    const result = data.result;
+
+    status.className = "creator-status ok";
+    status.textContent =
+      result.alreadyExists
+        ? "✓ CREATOR: ο Race Prefix είχε ήδη δημιουργηθεί — δεν έγινε διπλό αντίγραφο."
+        : "✓ CREATOR: δημιουργήθηκαν επιτυχώς τα 4 spreadsheets.";
+
+    renderCreationResult(result);
+
+    const links = [
+      { label: "Άνοιγμα SOURCE / ΣΥΜΜΕΤΟΧΕΣ", url: result.sourceUrl },
+      { label: "Άνοιγμα TARGET / ΕΛΕΓΧΟΣ ΔΕΛΤΙΩΝ", url: result.targetUrl },
+      { label: "Άνοιγμα SHARED DATA", url: result.sharedUrl },
+      { label: "Άνοιγμα BOAT LOOKUP / CREW CHANGE", url: result.boatLookupUrl }
+    ];
+
+    openCreateModal(
+      result.alreadyExists
+        ? "Ο αγώνας υπήρχε ήδη"
+        : "✓ Ο αγώνας δημιουργήθηκε",
+      '<p><strong>' + escapeHtml(result.raceTitle || raceTitle) + '</strong></p>' +
+      '<p>Race Prefix: <strong>' + escapeHtml(result.racePrefix || racePrefix) + '</strong></p>' +
+      '<p>' +
+        (result.alreadyExists
+          ? 'Δεν δημιουργήθηκαν διπλά αρχεία. Εμφανίζονται τα ήδη υπάρχοντα.'
+          : 'Δημιουργήθηκαν και ελέγχθηκαν επιτυχώς τα 4 spreadsheets.') +
+      '</p>' +
+      '<p><strong>Επόμενο στάδιο:</strong> κάνε τα δύο Web App deployments και μετά πάτησε ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ.</p>',
+      links
+    );
+
+    if (result.sourceSpreadsheetId) {
+      $("settingsSheetId").value =
+        result.sourceSpreadsheetId;
+      saveWizardState();
+    }
+
+    $("creatorKey").value = "";
+
+  } catch (err) {
+
+    status.className = "creator-status bad";
+
+    const msg =
+      String(
+        err && err.message
+          ? err.message
+          : err
+      );
+
+    status.textContent =
+      "✖ Η απάντηση του Creator δεν διαβάστηκε — " +
+      msg;
+
+    openCreateModal(
+      "Χρειάζεται έλεγχος",
+      '<p><strong>Η σελίδα δεν μπόρεσε να επιβεβαιώσει την τελική απάντηση του Creator.</strong></p>' +
+      '<p>Αυτό <u>δεν σημαίνει απαραίτητα</u> ότι η δημιουργία απέτυχε. Το Google Apps Script μπορεί να έχει ήδη δημιουργήσει τα αρχεία.</p>' +
+      '<p><strong>Μην πατήσεις ξανά «ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ».</strong></p>' +
+      '<p>Έλεγξε πρώτα τον φάκελο NEW_RACE_WIZARD στο Drive ή τις Executions του Creator.</p>' +
+      '<p>Τεχνική πληροφορία: ' + escapeHtml(msg) + '</p>',
+      []
+    );
+
+  } finally {
+
+    btn.disabled = false;
+
+  }
+
+}
+
+
+function getFinalizeRacePayload() {
+  const base = getCreateRacePayload();
+
+  return {
+    action: "finalizeRace",
+    creatorKey: value("creatorKey"),
+    forbiddenTokens: base.forbiddenTokens,
+    viewerWebAppUrl: value("viewerEndpoint"),
+    boatLookupWebAppUrl: value("boatLookupUrl"),
+    race: base.race
+  };
+}
+
+function runFinalizeChecks() {
+  $("checks").innerHTML = "";
+  $("copyStatus").textContent = "";
+
+  let ok = true;
+
+  const required = [
+    ["raceTitle", "Όνομα αγώνα"],
+    ["racePrefix", "Race Prefix"],
+    ["repoName", "GitHub Repository Name"],
+    ["raceDate", "Ημερομηνία αγώνα"],
+    ["raceEndDate", "Τελευταία ημέρα αγώνα"],
+    ["expiration", "Λήξη συμμετοχών"],
+    ["jotformId", "Jotform Form ID"],
+    ["viewerEndpoint", "Settings / Viewer Web App URL"],
+    ["boatLookupUrl", "Boat Lookup Web App URL"],
+    ["organizerAccessEmail", "Email πρόσβασης διοργανωτή"],
+    ["destinationFolderUrl", "Κεντρικός φάκελος αποθήκευσης αγώνων"],
+    ["creatorKey", "Creator Key"]
+  ];
+
+  required.forEach(([id, label]) => {
+    if (value(id)) {
+      addCheck(label + ": συμπληρωμένο", "ok");
+    } else {
+      addCheck(label + ": λείπει", "bad");
+      ok = false;
+    }
+  });
+
+  if (
+    value("viewerEndpoint") &&
+    !looksLikeScriptUrl(value("viewerEndpoint"))
+  ) {
+    addCheck(
+      "Settings / Viewer Web App URL: μη έγκυρη μορφή /exec.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  if (
+    value("boatLookupUrl") &&
+    !looksLikeScriptUrl(value("boatLookupUrl"))
+  ) {
+    addCheck(
+      "Boat Lookup Web App URL: μη έγκυρη μορφή /exec.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  if (
+    value("raceEndDate") &&
+    !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value("raceEndDate"))
+  ) {
+    addCheck(
+      "Τελευταία ημέρα αγώνα: χρησιμοποίησε μορφή DD/MM/YYYY.",
+      "bad"
+    );
+    ok = false;
+  }
+
+  const yearInfo = resolveRaceYear();
+
+  if (yearInfo.uniqueYears.length !== 1) {
+    addCheck(
+      yearInfo.uniqueYears.length === 0
+        ? "Δεν βρέθηκε έτος 20xx στα στοιχεία του αγώνα."
+        : "Βρέθηκαν διαφορετικά έτη: " +
+          yearInfo.uniqueYears.join(", "),
+      "bad"
+    );
+    ok = false;
+  } else {
+    addCheck(
+      "Έτος αγώνα: " + yearInfo.year + " — OK",
+      "ok"
+    );
+  }
+
+  addCheck(
+    ok
+      ? "ΕΤΟΙΜΟ για τελική σύνδεση ΡΥΘΜΙΣΕΩΝ + GitHub αρχείων."
+      : "Η ολοκλήρωση σταμάτησε μέχρι να διορθωθούν τα παραπάνω.",
+    ok ? "ok" : "bad"
+  );
+
+  return ok;
+}
+
+async function finalizeRace() {
+  alert("TEST V2: Οι εντολές δημιουργίας/ολοκλήρωσης αγώνα είναι κλειδωμένες σε αυτή τη δοκιμαστική σελίδα.");
+  return;
+
+  if (!runFinalizeChecks()) {
+    return;
+  }
+
+  const raceTitle = value("raceTitle");
+  const racePrefix = value("racePrefix");
+
+  const confirmed = window.confirm(
+    "Θα ολοκληρωθεί ο υπάρχων αγώνας:\n\n" +
+    raceTitle + "\n" +
+    racePrefix + "\n\n" +
+    "Θα ενημερωθούν οι ΡΥΘΜΙΣΕΙΣ και τα GitHub αρχεία " +
+    "με τα τελικά Viewer / Boat Lookup URLs.\n\n" +
+    "Δεν θα δημιουργηθούν νέα spreadsheets.\n\n" +
+    "Θέλεις να συνεχίσεις;"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const btn = $("finalizeRaceBtn");
+  const status = $("creatorStatus");
+
+  btn.disabled = true;
+
+  status.className = "creator-status wait";
+  status.textContent =
+    "Ολοκλήρωση αγώνα... Μην πατήσεις ξανά το κουμπί.";
+
+  openCreateModal(
+    "Ολοκλήρωση σε εξέλιξη",
+    '<p><span class="spinner"></span><strong>Ο Creator ενημερώνει ΡΥΘΜΙΣΕΙΣ και GitHub αρχεία.</strong></p>' +
+    '<p>Δεν δημιουργούνται νέα spreadsheets.</p>',
+    []
+  );
+
+  try {
+    const response = await fetch(
+      CREATOR_WEB_APP_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(getFinalizeRacePayload()),
+        redirect: "follow"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data || data.ok !== true || !data.result) {
+      const details =
+        data && data.validation && Array.isArray(data.validation.errors)
+          ? data.validation.errors.join(" | ")
+          : (
+              data && data.error
+                ? data.error
+                : "Μη αναμενόμενη απάντηση Creator"
+            );
+
+      throw new Error(details);
+    }
+
+    const result = data.result;
+
+    status.className = "creator-status ok";
+    status.textContent =
+      "✓ Ο ΑΓΩΝΑΣ ΟΛΟΚΛΗΡΩΘΗΚΕ — ΡΥΘΜΙΣΕΙΣ και GitHub αρχεία ενημερώθηκαν.";
+
+    if (result.sourceSpreadsheetId) {
+      $("settingsSheetId").value =
+        result.sourceSpreadsheetId;
+    }
+
+    if (result.viewerWebAppUrl) {
+      $("viewerEndpoint").value =
+        result.viewerWebAppUrl;
+    }
+
+    if (result.boatLookupWebAppUrl) {
+      $("boatLookupUrl").value =
+        result.boatLookupWebAppUrl;
+    }
+
+    saveWizardState();
+
+    const repoUrl =
+      "https://github.com/Regattahub/" +
+      encodeURIComponent(value("repoName"));
+
+    const appUrl =
+      "https://regattahub.github.io/" +
+      encodeURIComponent(value("repoName")) +
+      "/";
+
+    openCreateModal(
+      "✓ Ο αγώνας ολοκληρώθηκε",
+      '<p><strong>' + escapeHtml(result.raceTitle || raceTitle) + '</strong></p>' +
+      '<p>Race Prefix: <strong>' + escapeHtml(result.racePrefix || racePrefix) + '</strong></p>' +
+      '<p>Οι τελικές διευθύνσεις γράφτηκαν στις ΡΥΘΜΙΣΕΙΣ και στα GitHub αρχεία.</p>' +
+      '<p><strong>Επόμενο:</strong> ενεργοποίηση/έλεγχος GitHub Pages και λειτουργική δοκιμή.</p>',
+      [
+        { label: "Άνοιγμα GitHub repository", url: repoUrl },
+        { label: "Άνοιγμα εφαρμογής αγώνα", url: appUrl },
+        { label: "Άνοιγμα Κέντρου Αγώνα", url: result.raceCenterUrl || appUrl + "race-center.html" },
+        { label: "Άνοιγμα SOURCE / ΣΥΜΜΕΤΟΧΕΣ", url: result.sourceUrl }
+      ]
+    );
+
+    $("creatorKey").value = "";
+
+  } catch (err) {
+    const msg =
+      String(
+        err && err.message
+          ? err.message
+          : err
+      );
+
+    status.className = "creator-status bad";
+    status.textContent =
+      "✖ ΑΠΟΤΥΧΙΑ ΟΛΟΚΛΗΡΩΣΗΣ — " + msg;
+
+    openCreateModal(
+      "Η ολοκλήρωση δεν επιβεβαιώθηκε",
+      '<p><strong>Δεν έγινε επιτυχής επιβεβαίωση της τελικής σύνδεσης.</strong></p>' +
+      '<p>Μην πατήσεις ξανά αμέσως. Έλεγξε πρώτα τις Executions του Creator.</p>' +
+      '<p>Τεχνική πληροφορία: ' + escapeHtml(msg) + '</p>',
+      []
+    );
+
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+$("createRaceBtn")
+  .addEventListener(
+    "click",
+    createRace
+  );
+
+$("finalizeRaceBtn")
+  .addEventListener(
+    "click",
+    finalizeRace
+  );
+
+$("creatorCheckBtn")
+  .addEventListener(
+    "click",
+    testCreator
+  );
+
+$("checkBtn")
+  .addEventListener(
+    "click",
+    runChecks
+  );
+
+$("generateBtn")
+  .addEventListener(
+    "click",
+    generatePackage
+  );
+
+$("downloadBtn")
+  .addEventListener(
+    "click",
+    downloadPackage
+  );
+
+document
+  .querySelectorAll("[data-copy]")
+  .forEach(btn =>
+    btn.addEventListener(
+      "click",
+      () =>
+        copyBlock(
+          btn.dataset.copy
+        )
+    )
+  );
+
+$("demoBtn")
+  .addEventListener(
+    "click",
+    () => {
+
+      $("raceTitle").value =
+        "ΑΓΚΙΣΤΡΙ 2026";
+
+      $("racePrefix").value =
+        "AGKISTRI_2026";
+
+      $("repoName").value =
+        "agkistri-2026";
+
+      $("raceDate").value =
+        "19 & 20 Σεπτεμβρίου 2026";
+
+      $("raceEndDate").value =
+        "20/09/2026";
+
+      $("expiration").value =
+        "17 ΣΕΠΤΕΜΒΡΙΟΥ ώρα: 21:00";
+
+      $("jotformId").value =
+        "262291236204349";
+
+      $("settingsSheetId").value =
+        "";
+
+      $("bannerUrl").value =
+        "https://drive.google.com/file/d/1uc_l2tP3ak-pivtgABxuUxvfmjlS27Cf/view?usp=sharing";
+
+      $("organizerName").value =
+        "ΙΟΠ-ΔΕΗ / ΝΑΟΕΦΚ";
+
+      $("organizerEmail").value =
+        "";
+      $("organizerAccessEmail").value = "";
+
+      $("phone").value =
+        "210 4101113";
+
+      $("creatorKey").value =
+        "";
+
+      $("forbiddenTokens").value =
+        "ΚΟΡΦΟΣ, KALLITHEA, ΚΑΛΛΙΘΕΑ, 262128273107351";
+
+      $("viewerEndpoint").value =
+        "";
+
+      $("boatLookupUrl").value =
+        "";
+
+      runChecks();
+
+    }
+  );
+
+
+restoreWizardState();
+wireWizardAutosave();
+
+// TEST V2 read-only safety: buttons remain visibly disabled even if page fields validate.
+["createRaceBtn", "finalizeRaceBtn"].forEach(function(id) {
+  const button = document.getElementById(id);
+  if (button) {
+    button.disabled = true;
+    button.title = "TEST V2: Η λειτουργία αυτή είναι σκόπιμα κλειδωμένη";
+    button.style.opacity = "0.42";
+    button.style.cursor = "not-allowed";
+  }
+});
+
+
+
+</script>
+
+</body>
+</html>
+
+
+
