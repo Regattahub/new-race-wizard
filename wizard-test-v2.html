@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RegattaHub - Wizard TEST V2 (READ-ONLY)</title>
+  <title>RegattaHub Wizard - TEST CREATE ONLY RH_TEST_2027_V2</title>
   <style>
     * { box-sizing: border-box; }
     body { margin:0; font-family:Arial,sans-serif; background:#0d5e92; color:#263238; }
@@ -118,9 +118,9 @@
 <div class="page">
 <div class="panel">
 
-<h1>RegattaHub New Race Wizard — TEST V2</h1>
-<div role="status" style="padding:12px 14px;margin:12px 0;border:2px solid #a15700;background:#fff3d4;color:#5f3500;font-weight:700;border-radius:8px">ΔΟΚΙΜΑΣΤΙΚΟ WIZARD — ΜΟΝΟ ΕΛΕΓΧΟΙ. Η δημιουργία και η ολοκλήρωση αγώνα είναι απενεργοποιημένες. Συνδέεται στον Creator TEST V2, όχι στον κανονικό Creator.</div>
-<div class="subtitle">Έκδοση 4.9 TEST V2 — μόνο έλεγχοι, χωρίς δημιουργία αγώνα</div>
+<h1>RegattaHub New Race Wizard — TEST CREATE RH_TEST_2027_V2</h1>
+<div role="status" style="padding:12px 14px;margin:12px 0;border:2px solid #a15700;background:#fff3d4;color:#5f3500;font-weight:700;border-radius:8px">ΔΟΚΙΜΑΣΤΙΚΟ WIZARD — ΕΠΙΤΡΕΠΕΤΑΙ ΜΟΝΟ ΜΙΑ ΕΛΕΓΧΟΜΕΝΗ ΔΗΜΙΟΥΡΓΙΑ ΤΟΥ RH_TEST_2027_V2, ΟΧΙ ΚΑΝΟΝΙΚΟΥ ΑΓΩΝΑ. Η ΟΛΟΚΛΗΡΩΣΗ ΠΑΡΑΜΕΝΕΙ ΚΛΕΙΔΩΜΕΝΗ. Ο CREATOR ΔΕΝ ΕΠΙΤΡΕΠΕΙ ΕΓΓΡΑΦΕΣ ΕΩΣ ΟΤΟΥ ΕΝΕΡΓΟΠΟΙΗΘΕΙ ΡΗΤΑ ΤΟ TEST ALLOW WRITES.</div>
+<div class="subtitle">TEST CREATE ONLY — ένας απομονωμένος δοκιμαστικός αγώνας. Όχι παραγωγική χρήση</div>
 
 <div class="grid">
 
@@ -272,7 +272,7 @@
 <div class="actions">
   <button class="primary" id="checkBtn">ΕΛΕΓΧΟΣ</button>
   <button class="creator-btn" id="creatorCheckBtn">ΕΛΕΓΧΟΣ CREATOR</button>
-  <button class="create-race-btn" id="createRaceBtn">ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ</button>
+  <button class="create-race-btn" id="createRaceBtn">ΔΗΜΙΟΥΡΓΙΑ ΜΟΝΟ ΤΟΥ TEST 2027</button>
   <button class="finalize-race-btn" id="finalizeRaceBtn">ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ</button>
   <button class="secondary" id="generateBtn">ΔΗΜΙΟΥΡΓΙΑ ΠΑΚΕΤΟΥ</button>
   <button class="download" id="downloadBtn">ΛΗΨΗ ΠΑΚΕΤΟΥ</button>
@@ -1381,8 +1381,26 @@ function renderCreationResult(result) {
 }
 
 async function createRace() {
-  alert("TEST V2: Οι εντολές δημιουργίας/ολοκλήρωσης αγώνα είναι κλειδωμένες σε αυτή τη δοκιμαστική σελίδα.");
-  return;
+  // Additional browser-side identity lock. The server independently requires CREATOR_KEY,
+  // CREATOR_TEST_ALLOW_WRITES=YES, and TEST naming. This page is not a production endpoint.
+  const exact = [
+    ["raceTitle", "REGATTAHUB TEST 2027"],
+    ["racePrefix", "RH_TEST_2027_V2"],
+    ["repoName", "rh-test-2027-v2"],
+    ["raceDate", "01/10/2027"],
+    ["raceEndDate", "02/10/2027"],
+    ["expiration", "29/09/2027, 21:00"],
+    ["jotformId", "262900632499362"],
+    ["organizerAccessEmail", "info.regattahub@gmail.com"]
+  ];
+  const mismatch = exact.filter(function(pair) { return value(pair[0]) !== pair[1]; });
+  const folderMatch = value("destinationFolderUrl")
+    .match(/(?:\/folders\/|^)([A-Za-z0-9_-]{20,})(?:[?/#]|$)/);
+  if (mismatch.length || !folderMatch || folderMatch[1] !== "1dEbst4bjWs-JjFgPdQqSM5hnwqrOXGzU") {
+    alert("ΔΟΚΙΜΗ ΑΚΥΡΩΘΗΚΕ: επιτρέπεται μόνο ο ακριβής αγώνας RH_TEST_2027_V2 με τον ελεγμένο φάκελο REGATTAHUB_TESTS_V2. Μη δοκιμάσεις άλλον αγώνα από εδώ.");
+    return;
+  }
+
 
 
   if (!runCreateChecks()) {
@@ -1393,10 +1411,10 @@ async function createRace() {
   const racePrefix = value("racePrefix");
 
   const confirmed = window.confirm(
-    "Θα δημιουργηθούν πραγματικά 4 νέα spreadsheets για:\n\n" +
+    "ΠΡΑΓΜΑΤΙΚΗ ΔΟΚΙΜΗ: Θα δημιουργηθεί ξεχωριστός αγώνας στο REGATTAHUB_TESTS_V2 (4 Master αντίγραφα, 1 CENTRAL EIO και νέο GitHub repository) για:\n\n" +
     raceTitle + "\n" +
     racePrefix + "\n\n" +
-    "Θέλεις να συνεχίσεις;"
+    "Μην πατήσεις αν δεν έχει προηγηθεί η άδεια δοκιμαστικών εγγραφών. Συνεχίζεις μόνο για το συγκεκριμένο TEST;"
   );
 
   if (!confirmed) {
@@ -1414,7 +1432,7 @@ async function createRace() {
 
   openCreateModal(
     "Δημιουργία σε εξέλιξη",
-    '<p><span class="spinner"></span><strong>Ο Creator δημιουργεί τα 4 spreadsheets.</strong></p>' +
+    '<p><span class="spinner"></span><strong>Ο Creator δημιουργεί τα δοκιμαστικά αρχεία.</strong></p>' +
     '<p>Μην κλείσεις τη σελίδα και μην πατήσεις ξανά «ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ».</p>',
     []
   );
@@ -1455,7 +1473,7 @@ async function createRace() {
     status.textContent =
       result.alreadyExists
         ? "✓ CREATOR: ο Race Prefix είχε ήδη δημιουργηθεί — δεν έγινε διπλό αντίγραφο."
-        : "✓ CREATOR: δημιουργήθηκαν επιτυχώς τα 4 spreadsheets.";
+        : "✓ CREATOR: ο Creator επέστρεψε αποτέλεσμα δημιουργίας δοκιμαστικού αγώνα.";
 
     renderCreationResult(result);
 
@@ -1475,7 +1493,7 @@ async function createRace() {
       '<p>' +
         (result.alreadyExists
           ? 'Δεν δημιουργήθηκαν διπλά αρχεία. Εμφανίζονται τα ήδη υπάρχοντα.'
-          : 'Δημιουργήθηκαν και ελέγχθηκαν επιτυχώς τα 4 spreadsheets.') +
+          : 'Δημιουργήθηκαν δοκιμαστικά αρχεία. Ακολουθεί επιθεώρηση κάθε συνδέσμου.') +
       '</p>' +
       '<p><strong>Επόμενο στάδιο:</strong> κάνε τα δύο Web App deployments και μετά πάτησε ΟΛΟΚΛΗΡΩΣΗ ΑΓΩΝΑ.</p>',
       links
@@ -1509,7 +1527,7 @@ async function createRace() {
       '<p><strong>Η σελίδα δεν μπόρεσε να επιβεβαιώσει την τελική απάντηση του Creator.</strong></p>' +
       '<p>Αυτό <u>δεν σημαίνει απαραίτητα</u> ότι η δημιουργία απέτυχε. Το Google Apps Script μπορεί να έχει ήδη δημιουργήσει τα αρχεία.</p>' +
       '<p><strong>Μην πατήσεις ξανά «ΔΗΜΙΟΥΡΓΙΑ ΑΓΩΝΑ».</strong></p>' +
-      '<p>Έλεγξε πρώτα τον φάκελο NEW_RACE_WIZARD στο Drive ή τις Executions του Creator.</p>' +
+      '<p>Έλεγξε πρώτα τον φάκελο REGATTAHUB_TESTS_V2 στο Drive ή τις Executions του Creator.</p>' +
       '<p>Τεχνική πληροφορία: ' + escapeHtml(msg) + '</p>',
       []
     );
@@ -1645,7 +1663,7 @@ async function finalizeRace() {
     "Θα ενημερωθούν οι ΡΥΘΜΙΣΕΙΣ και τα GitHub αρχεία " +
     "με τα τελικά Viewer / Boat Lookup URLs.\n\n" +
     "Δεν θα δημιουργηθούν νέα spreadsheets.\n\n" +
-    "Θέλεις να συνεχίσεις;"
+    "Μην πατήσεις αν δεν έχει προηγηθεί η άδεια δοκιμαστικών εγγραφών. Συνεχίζεις μόνο για το συγκεκριμένο TEST;"
   );
 
   if (!confirmed) {
@@ -1884,8 +1902,9 @@ $("demoBtn")
 restoreWizardState();
 wireWizardAutosave();
 
-// TEST V2 read-only safety: buttons remain visibly disabled even if page fields validate.
-["createRaceBtn", "finalizeRaceBtn"].forEach(function(id) {
+// TEST CREATE version: create is allowed only by explicit user action and exact identity.
+// Finalize remains disabled; server-side writes remain locked unless explicitly opted in.
+["finalizeRaceBtn"].forEach(function(id) {
   const button = document.getElementById(id);
   if (button) {
     button.disabled = true;
